@@ -4,13 +4,17 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/ui": "~58.0.24",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~58.0.20",
     "expo-constants": "~58.0.13",
+    "expo-dev-client": "~58.0.16",
     "expo-device": "~58.0.5",
     "expo-font": "~58.0.10",
     "expo-glass-effect": "~58.0.5",
     "expo-image": "~58.0.17",
     "expo-linking": "~58.0.14",
+    "expo-location": "~58.0.19",
+    "expo-notifications": "~58.1.6",
     "expo-router": "~58.0.27",
     "expo-splash-screen": "~58.0.11",
     "expo-status-bar": "~58.0.4",
@@ -28,7 +32,12 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~58.0.4",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.12",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -37,7 +46,26 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand --watchman=false",
+    "test:watch": "jest --watch --watchman=false",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "prepare:catalog": "node scripts/prepare-catalog.cjs",
+    "prestart": "npm run prepare:catalog",
+    "preandroid": "npm run prepare:catalog",
+    "preios": "npm run prepare:catalog",
+    "preweb": "npm run prepare:catalog",
+    "pretypecheck": "npm run prepare:catalog",
+    "pretest": "npm run prepare:catalog",
+    "bundle:android": "npm run prepare:catalog && expo export --platform android",
+    "eas-build-post-install": "npm run prepare:catalog",
+    "postinstall": "npm run prepare:catalog"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "testMatch": ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.test.tsx"],
+    "collectCoverageFrom": ["src/domain/**/*.ts", "src/state/appReducer.ts", "src/storage/persistence.ts"]
   },
   "private": true
 }
