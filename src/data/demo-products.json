@@ -1,0 +1,758 @@
+[
+  {
+    "id": "demo-cold-cough-01",
+    "name": "Soft tissues",
+    "salt": "100 sheets",
+    "subtitle": "100 sheets",
+    "categoryIds": [
+      "cold-cough"
+    ],
+    "price": 45,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-cold-cough-02",
+    "name": "Pocket tissues",
+    "salt": "6 packs",
+    "subtitle": "6 packs",
+    "categoryIds": [
+      "cold-cough"
+    ],
+    "price": 60,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-cold-cough-03",
+    "name": "Steam inhalation cup",
+    "salt": "1 cup",
+    "subtitle": "1 cup",
+    "categoryIds": [
+      "cold-cough"
+    ],
+    "price": 150,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-cold-cough-04",
+    "name": "Honey drink mix",
+    "salt": "100 g",
+    "subtitle": "100 g",
+    "categoryIds": [
+      "cold-cough"
+    ],
+    "price": 120,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-cold-cough-05",
+    "name": "Reusable face covering",
+    "salt": "2 pieces",
+    "subtitle": "2 pieces",
+    "categoryIds": [
+      "cold-cough"
+    ],
+    "price": 90,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-cold-cough-06",
+    "name": "Warm drink flask",
+    "salt": "350 ml",
+    "subtitle": "350 ml",
+    "categoryIds": [
+      "cold-cough"
+    ],
+    "price": 250,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-pain-relief-01",
+    "name": "Reusable cold pack",
+    "salt": "1 pack",
+    "subtitle": "1 pack",
+    "categoryIds": [
+      "pain-relief"
+    ],
+    "price": 140,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-pain-relief-02",
+    "name": "Warm compress wrap",
+    "salt": "1 wrap",
+    "subtitle": "1 wrap",
+    "categoryIds": [
+      "pain-relief"
+    ],
+    "price": 220,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-pain-relief-03",
+    "name": "Stretch band",
+    "salt": "Medium resistance",
+    "subtitle": "Medium resistance",
+    "categoryIds": [
+      "pain-relief"
+    ],
+    "price": 180,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-pain-relief-04",
+    "name": "Neck support cushion",
+    "salt": "1 cushion",
+    "subtitle": "1 cushion",
+    "categoryIds": [
+      "pain-relief"
+    ],
+    "price": 350,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-pain-relief-05",
+    "name": "Massage roller",
+    "salt": "1 roller",
+    "subtitle": "1 roller",
+    "categoryIds": [
+      "pain-relief"
+    ],
+    "price": 230,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-pain-relief-06",
+    "name": "Rest eye mask",
+    "salt": "1 mask",
+    "subtitle": "1 mask",
+    "categoryIds": [
+      "pain-relief"
+    ],
+    "price": 110,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-daily-wellness-01",
+    "name": "Steel water bottle",
+    "salt": "750 ml",
+    "subtitle": "750 ml",
+    "categoryIds": [
+      "daily-wellness"
+    ],
+    "price": 300,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-daily-wellness-02",
+    "name": "Weekly pill organizer",
+    "salt": "7 compartments",
+    "subtitle": "7 compartments",
+    "categoryIds": [
+      "daily-wellness"
+    ],
+    "price": 130,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-daily-wellness-03",
+    "name": "Herbal tea bags",
+    "salt": "20 bags",
+    "subtitle": "20 bags",
+    "categoryIds": [
+      "daily-wellness"
+    ],
+    "price": 160,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-daily-wellness-04",
+    "name": "Oat breakfast mix",
+    "salt": "400 g",
+    "subtitle": "400 g",
+    "categoryIds": [
+      "daily-wellness"
+    ],
+    "price": 190,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-daily-wellness-05",
+    "name": "Trail mix",
+    "salt": "200 g",
+    "subtitle": "200 g",
+    "categoryIds": [
+      "daily-wellness"
+    ],
+    "price": 210,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-daily-wellness-06",
+    "name": "Travel wellness pouch",
+    "salt": "1 pouch",
+    "subtitle": "1 pouch",
+    "categoryIds": [
+      "daily-wellness"
+    ],
+    "price": 170,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "bottle",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-skin-hair-01",
+    "name": "Gentle face wash",
+    "salt": "100 ml",
+    "subtitle": "100 ml",
+    "categoryIds": [
+      "skin-hair"
+    ],
+    "price": 180,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-skin-hair-02",
+    "name": "Daily moisturizer",
+    "salt": "100 ml",
+    "subtitle": "100 ml",
+    "categoryIds": [
+      "skin-hair"
+    ],
+    "price": 220,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-skin-hair-03",
+    "name": "Aloe body lotion",
+    "salt": "200 ml",
+    "subtitle": "200 ml",
+    "categoryIds": [
+      "skin-hair"
+    ],
+    "price": 250,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-skin-hair-04",
+    "name": "Mild shampoo",
+    "salt": "200 ml",
+    "subtitle": "200 ml",
+    "categoryIds": [
+      "skin-hair"
+    ],
+    "price": 200,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-skin-hair-05",
+    "name": "Hair conditioner",
+    "salt": "150 ml",
+    "subtitle": "150 ml",
+    "categoryIds": [
+      "skin-hair"
+    ],
+    "price": 230,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-skin-hair-06",
+    "name": "Lip care balm",
+    "salt": "4 g",
+    "subtitle": "4 g",
+    "categoryIds": [
+      "skin-hair"
+    ],
+    "price": 90,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-baby-care-01",
+    "name": "Baby wipes",
+    "salt": "72 wipes",
+    "subtitle": "72 wipes",
+    "categoryIds": [
+      "baby-care"
+    ],
+    "price": 120,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "baby",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-baby-care-02",
+    "name": "Baby wash",
+    "salt": "200 ml",
+    "subtitle": "200 ml",
+    "categoryIds": [
+      "baby-care"
+    ],
+    "price": 210,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "baby",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-baby-care-03",
+    "name": "Baby towel",
+    "salt": "1 towel",
+    "subtitle": "1 towel",
+    "categoryIds": [
+      "baby-care"
+    ],
+    "price": 280,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "baby",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-baby-care-04",
+    "name": "Baby care pouch",
+    "salt": "1 pouch",
+    "subtitle": "1 pouch",
+    "categoryIds": [
+      "baby-care"
+    ],
+    "price": 200,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "baby",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-baby-care-05",
+    "name": "Baby comb set",
+    "salt": "2 pieces",
+    "subtitle": "2 pieces",
+    "categoryIds": [
+      "baby-care"
+    ],
+    "price": 110,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "baby",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-baby-care-06",
+    "name": "Changing mat",
+    "salt": "1 mat",
+    "subtitle": "1 mat",
+    "categoryIds": [
+      "baby-care"
+    ],
+    "price": 320,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "baby",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-personal-care-01",
+    "name": "Soft toothbrush",
+    "salt": "1 brush",
+    "subtitle": "1 brush",
+    "categoryIds": [
+      "personal-care"
+    ],
+    "price": 55,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-personal-care-02",
+    "name": "Dental floss",
+    "salt": "50 m",
+    "subtitle": "50 m",
+    "categoryIds": [
+      "personal-care"
+    ],
+    "price": 90,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-personal-care-03",
+    "name": "Hand wash",
+    "salt": "250 ml",
+    "subtitle": "250 ml",
+    "categoryIds": [
+      "personal-care"
+    ],
+    "price": 100,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-personal-care-04",
+    "name": "Cotton pads",
+    "salt": "80 pads",
+    "subtitle": "80 pads",
+    "categoryIds": [
+      "personal-care"
+    ],
+    "price": 85,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-personal-care-05",
+    "name": "Travel soap case",
+    "salt": "1 case",
+    "subtitle": "1 case",
+    "categoryIds": [
+      "personal-care"
+    ],
+    "price": 60,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-personal-care-06",
+    "name": "Bath sponge",
+    "salt": "1 sponge",
+    "subtitle": "1 sponge",
+    "categoryIds": [
+      "personal-care"
+    ],
+    "price": 75,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "tube",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-first-aid-01",
+    "name": "Adhesive bandages",
+    "salt": "20 strips",
+    "subtitle": "20 strips",
+    "categoryIds": [
+      "first-aid"
+    ],
+    "price": 70,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-first-aid-02",
+    "name": "Sterile gauze",
+    "salt": "10 pads",
+    "subtitle": "10 pads",
+    "categoryIds": [
+      "first-aid"
+    ],
+    "price": 100,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-first-aid-03",
+    "name": "Paper tape",
+    "salt": "1 roll",
+    "subtitle": "1 roll",
+    "categoryIds": [
+      "first-aid"
+    ],
+    "price": 60,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-first-aid-04",
+    "name": "Cotton roll",
+    "salt": "100 g",
+    "subtitle": "100 g",
+    "categoryIds": [
+      "first-aid"
+    ],
+    "price": 80,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-first-aid-05",
+    "name": "First aid pouch",
+    "salt": "Empty pouch",
+    "subtitle": "Empty pouch",
+    "categoryIds": [
+      "first-aid"
+    ],
+    "price": 160,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  },
+  {
+    "id": "demo-first-aid-06",
+    "name": "Disposable gloves",
+    "salt": "10 pairs",
+    "subtitle": "10 pairs",
+    "categoryIds": [
+      "first-aid"
+    ],
+    "price": 140,
+    "maxQty": 5,
+    "rx": false,
+    "imageKey": "care",
+    "tags": [
+      "Demo item"
+    ],
+    "isAvailable": true,
+    "isDemo": true
+  }
+]
