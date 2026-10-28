@@ -6,6 +6,8 @@ Keep `master` and existing take-home requirements, tests, routes, and business r
 
 Stage 1 catalog expansion and Commerce Home are implemented on the feature branch; see [implementation, validation and remaining limitations](COMMERCE_STAGE_1.md). The additional features below remain proposals.
 
+P0 permission hardening and the P1 [delivery address book](ADDRESS_BOOK.md) are also implemented. Orders will atomically persist an order with its immutable delivery-address snapshot before clearing the cart; this address slice only exposes the snapshot API and keeps mock checkout unchanged.
+
 ## Product objective
 
 Demo an end-to-end Android, offline-first health/quick-commerce journey:

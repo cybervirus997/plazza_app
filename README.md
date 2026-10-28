@@ -6,11 +6,13 @@
 ![Expo SDK 58](https://img.shields.io/badge/Expo-SDK%2058-000000?logo=expo)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white)
 ![Android 13+](https://img.shields.io/badge/Android-13%2B-3DDC84?logo=android&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-161%20passing-22a06b)
+![Tests](https://img.shields.io/badge/Tests-237%20passing-22a06b)
 
 Plazza demonstrates a complete **discover → search → cart → coupon → mock checkout** experience, with Android permission handling, persistent shopping state, deterministic billing and an extensible promotion engine. Everything runs on-device; no API, payment integration or backend is required.
 
 On `feat/plazza-commerce-mvp`, **Stage 1** adds 42 separate demo essentials to the unchanged 15 medicine records, horizontal categories, configurable Home shelves and an offer-banner slot. See [Stage 1 implementation and verification](docs/COMMERCE_STAGE_1.md). Later roadmap stages remain unimplemented.
+
+**P1 delivery addresses** add an offline address book, recipients, gate instructions, independent default/current selection and a tested versioned snapshot API for future orders. Manual entry works without GPS permission; current-location suggestions never auto-save. See [address architecture](docs/ADDRESS_BOOK.md) and the [Android address checklist](docs/ADDRESS_BOOK_ANDROID_CHECKLIST.md). Mock checkout remains unchanged.
 
 **Explore:** [Features](#features) · [Quick start](#quick-start) · [Demo walkthrough](#demo-walkthrough) · [Architecture](#architecture) · [Testing--ci](#testing--ci) · [Android builds](#android-builds) · [Decisions & limitations](#decisions--limitations)
 
@@ -21,6 +23,7 @@ On `feat/plazza-commerce-mvp`, **Stage 1** adds 42 separate demo essentials to t
 | **Native permissions** | Foreground location and Android 13+ notification permission flows; granted/denied/blocked states; App Settings shortcut; recheck when returning to the app; a Home debug-status panel and coordinate-based delivery label. |
 | **Discover & search** | Configured Home shelves, horizontal categories and bundled product illustrations; Browse lists all 57 local products and filters by category, name **and** ingredient/salt; live suggestions, matching results and empty/loading/no-results states. |
 | **Recent searches** | Five most recent committed searches, deduplicated and restored after relaunch. |
+| **Delivery addresses** | Home/Cart selector, add/edit/delete, local persistence, customizable labels, optional recipients, gate preferences and separate default/current delivery choices. |
 | **Cart** | Add, increment, decrement and remove; per-medicine `maxQty` enforcement; Rx badges; synchronized controls across Home, Browse and Cart. |
 | **Coupons & billing** | Four coupon types, one active at a time, automatic revalidation on cart changes and an explanatory Android toast when an applied coupon becomes invalid. |
 | **Mock checkout** | Order confirmation, cart reset and local redemption of one-time coupons—without a real order or payment backend. |
@@ -137,6 +140,8 @@ npm run bundle:android              # JS/Hermes export; NOT an APK
 ```
 
 **Stage 1 local verification (28 October 2026):** **161 tests passed across 18 suites**, TypeScript, ESLint, demo preflight, required catalog preparation and Android Hermes export passed. The online Expo compatibility check reports 12 newer patch versions for existing SDK 58 packages; the newly added `expo-image` is compatible. See [Stage 1 verification and limits](docs/COMMERCE_STAGE_1.md). The earlier submitted source [passed GitHub Actions on commit `70f2065`](https://github.com/cybervirus997/plazza_app/actions/runs/40705032679); this does not establish CI or native-device verification for the feature branch.
+
+**P1 local verification (29 October 2026):** `npm run check` passes **237 tests / 22 suites**, including all 195 tests from the P0 baseline. Android Hermes export passes. These results do not establish native keyboard, accessibility or device verification; no new APK is claimed.
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on **push**, **pull request** and **manual dispatch**, using Node.js 24, `npm ci`, required catalog preparation, TypeScript, lint and tests. No emulator or EAS credentials are required.
 
