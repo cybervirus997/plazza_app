@@ -18,6 +18,8 @@ Read [AGENTS.md](../AGENTS.md) first. Its Expo SDK/documentation, Router, depend
 
 Keep asynchronous storage out of screens. Pass repositories/ports through existing injection boundaries. Keep shopping, payment, receipts, saved addresses and OS permission state distinct. Checkout preferences are only ephemeral method/slot/simulator UI choices: they survive an Edit Cart pop but own no cart, bill, address, payment outcome or persisted data.
 
+Home's delivery destination comes only from the Address Book's selected saved address, never the default or device GPS. Keep permission details/coordinates in App Permissions; denied GPS alone is not a shopping warning. Permission-provider startup reads status without prompts or GPS, including a background launch's first foreground observation. Explicit Enable/Settings grant transitions and Update Location retain their existing lifecycle guards. Keep Home's search input at a stable component position and use the existing vertical FlatList/horizontal shelves. The scan demo is a separate native modal with synthetic data only; it must not import camera/scanner modules, request camera access, or imply pack authenticity/validation.
+
 Keep business rules out of JSX. Cross-feature imports need a clear workflow/composition reason; share pure rules through their existing owner rather than duplicating state. Prefer explicit functions, typed parameters and readable composition.
 
 Pure object validation lives in `domain/validation.ts`. The storage compatibility export remains for existing callers. Avoid importing a storage implementation merely to use a type guard. Name modules for their responsibility, not their line count; do not split a file without a clearer API/owner.
