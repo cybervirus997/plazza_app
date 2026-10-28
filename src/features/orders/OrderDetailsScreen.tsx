@@ -7,13 +7,14 @@ import { colors, ui } from '../../theme/tokens';
 import { OrderItem } from './OrderItems';
 import { OrderIdentity, OrderReceiptFooter } from './OrderReceipt';
 import { useOrderById } from './useOrders';
-import { backTo, openPayment } from '../../navigation/commerceNavigation';
+import { backTo, openPayment, openTracking } from '../../navigation/commerceNavigation';
+import { canTrackOrder } from '../../domain/tracking';
 import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
 
 export default function OrderDetailsScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = typeof params.id === 'string' ? params.id : undefined;
-  const { orders, payment } = useShopping();
+  const { orders, payment, state } = useShopping();
   const resource = useOrderById(orders, id);
   const order = resource.data;
   return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
@@ -22,6 +23,7 @@ export default function OrderDetailsScreen() {
       ListHeaderComponent={<View style={{ gap: 14 }}>
         <Text style={ui.label}>PURCHASE-TIME SNAPSHOT</Text>
         {order && <OrderIdentity order={order} reconciling={payment.attempt?.order.id === order.id && !payment.attempt.finalized} />}
+        {order && canTrackOrder(order, payment.attempt, state.lastFinalizedCheckoutId) && <Button label="Track Demo Order" onPress={() => openTracking(order.id)} />}
         {order && payment.attempt?.order.id === order.id && !payment.attempt.finalized && <>
           <Text accessibilityRole="alert" style={ui.body}>This receipt is saved, but checkout reconciliation must finish before order confirmation.</Text>
           <Button label="Resolve saved checkout" onPress={openPayment} />

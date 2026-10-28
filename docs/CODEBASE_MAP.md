@@ -11,6 +11,7 @@ Local source is authoritative. Read AGENTS.md and ENGINEERING_STANDARDS.md; reco
 | `addresses`, `address-form` | `features/addresses/AddressBookScreen`, `AddressFormScreen` |
 | `checkout`, `payment`, `order-confirmation` | Corresponding `features/orders/*Screen` |
 | `orders/index`, `orders/[id]` | `OrderHistoryScreen`, `OrderDetailsScreen` |
+| `tracking` | `features/tracking/TrackingScreen`, useOrderTracking, TrackingTimeline, DemoRouteMap |
 | `app-permissions`, `scan-medicine` | `features/permissions/AppPermissionsScreen`, `features/scan/ScanDemoScreen` |
 
 `app/_layout` composes providers and the hydrated native stack; tabs are in `components/app-tabs`. Routes are thin exports.
@@ -34,6 +35,7 @@ Local source is authoritative. Read AGENTS.md and ENGINEERING_STANDARDS.md; reco
 | `plazza.addresses.v1` | v1 independent address book; LocalAddressRepository |
 | `plazza.payments.v1` | v1 latest durable attempt; LocalPaymentRepository |
 | `plazza.checkout.v1` | v1 immutable pending intent; features/orders/checkout |
+| `plazza.tracking.v1` | v1 independent immutable tracking-event records; LocalTrackingRepository |
 | `plazza.orders.v1` | v1 immutable receipts; LocalOrderRepository |
 
 ## Critical recovery boundary
@@ -56,7 +58,7 @@ Local source is authoritative. Read AGENTS.md and ENGINEERING_STANDARDS.md; reco
 
 ## Planned independent owners — master implementation
 
-Tracking: `domain/tracking`, TrackingRepository/local adapter, `features/tracking`; separate versioned event history linked by orderId, never receipt edits.
+Tracking implemented: `domain/tracking`, TrackingRepository/local adapter, `features/tracking`; separate versioned event history linked by orderId, never receipt edits. Tracking tests cover ordering, idempotency, corruption, restart, lost acknowledgements and eligibility; tracking-ui verifies recovery/unknown/Rx/map semantics. `storage/versionedRecords` serializes independent single-key feature writes and fails closed; it is never a shopping writer.
 
 Family Care: `domain/carePlans`, CarePlanRepository/local adapter, `features/care`; independent recipients/plans and reminder reconciliation. A proposal enters the one shopping reducer only after explicit review/cart-collision choice. Native reminders never order/pay.
 

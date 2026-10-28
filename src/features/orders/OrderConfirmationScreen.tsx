@@ -9,7 +9,7 @@ import { AddressSummary } from './AddressSummary';
 import { OrderIdentity } from './OrderReceipt';
 import { OrderPage } from './OrderPage';
 import { useOrderById } from './useOrders';
-import { backTo, openOrders, openPayment, openReceipt, returnToShop } from '../../navigation/commerceNavigation';
+import { backTo, openOrders, openPayment, openReceipt, openTracking, returnToShop } from '../../navigation/commerceNavigation';
 
 export default function OrderConfirmationScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -34,6 +34,7 @@ export default function OrderConfirmationScreen() {
             {order.items.some((item) => item.rx) && <Text style={ui.body}>Prescription review required. No prescription was verified or approved.</Text>}
             <AddressSummary snapshot={order.deliveryAddress} />
             <Button label="View Order" onPress={() => openReceipt(order.id)} />
+            <Button label="Track Demo Order" onPress={() => openTracking(order.id)} />
             <Button label="Continue Shopping" variant="secondary" onPress={() => returnToShop()} />
           </>}
   </OrderPage>;

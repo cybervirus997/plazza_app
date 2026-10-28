@@ -7,11 +7,12 @@ import { colors, ui } from '../../theme/tokens';
 import { OrderHistoryCard } from './OrderHistoryCard';
 import { unresolvedPayment } from '../../domain/payments';
 import { useOrderHistory } from './useOrders';
-import { backTo, openPayment, openReceipt, returnToShop } from '../../navigation/commerceNavigation';
+import { backTo, openPayment, openReceipt, openTracking, returnToShop } from '../../navigation/commerceNavigation';
+import { canTrackOrder } from '../../domain/tracking';
 import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
 
 export default function OrderHistoryScreen() {
-  const { orders, payment } = useShopping();
+  const { orders, payment, state } = useShopping();
   const history = useOrderHistory(orders);
   return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
     <Stack.Screen options={headerOptions('Your orders', 'Back from orders', () => backTo('/'))} />
@@ -22,7 +23,8 @@ export default function OrderHistoryScreen() {
         {history.data?.warning && <Text accessibilityRole="alert" style={ui.body}>{history.data.warning}</Text>}
         {unresolvedPayment(payment.attempt) && <Button label="Open saved payment attempt" variant="secondary" onPress={openPayment} />}
       </View>}
-      renderItem={({ item }) => <OrderHistoryCard order={item} reconciling={payment.attempt?.order.id === item.id && !payment.attempt.finalized} onOpen={openReceipt} />}
+      renderItem={({ item }) => <OrderHistoryCard order={item} reconciling={payment.attempt?.order.id === item.id && !payment.attempt.finalized} onOpen={openReceipt}
+        onTrack={canTrackOrder(item, payment.attempt, state.lastFinalizedCheckoutId) ? openTracking : undefined} />}
       ListEmptyComponent={<View style={ui.card}>
         {history.status === 'loading' ? <><ActivityIndicator accessibilityLabel="Loading saved orders" color={colors.primary} /><Text style={ui.body}>Loading your saved orders…</Text></>
           : history.error ? <><Text accessibilityRole="alert" style={ui.body}>{history.error}</Text><Button label="Retry orders" onPress={history.retry} /></>

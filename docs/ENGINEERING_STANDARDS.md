@@ -67,7 +67,7 @@ Use Button for text actions and IconButton for labelled Back/clear actions; deco
 
 ## UI reuse, accessibility and errors
 
-Use shared StatusPanel/StatusBadge for icon, tone and text presentation. Keep payment-attempt and fulfillment types/maps separate. A `placed` receipt remains `placed` while checkout reconciliation is pending; show the latter as an additional warning, not a fulfillment state. Only a durably finalized order receives the positive confirmation treatment. Do not invent tracking statuses, dispatch or real payment promises.
+Use shared StatusPanel/StatusBadge for icon, tone and text presentation. Keep payment-attempt and fulfillment types/maps separate. A `placed` receipt remains `placed` while checkout reconciliation is pending; show the latter as an additional warning, not a fulfillment state. Only a durably finalized order receives the positive confirmation treatment. Tracking stages belong only to the separately persisted, explicitly simulated tracking feature authorized by the master implementation. They never change a receipt status or imply real dispatch/payment.
 
 Share layout, address, item and receipt presentation where multiple screens benefit. Feature-specific cards can own their own layout; avoid a generic configurable UI framework. Use tokens, flexible wrapping and scalable text. Keep controls at least 48 points high, provide stable accessible names plus disabled/selected states, hide decorative icons and announce changing status politely. Do not rely on color or animation alone.
 

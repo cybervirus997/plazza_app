@@ -24,5 +24,6 @@ export function returnToShop(tab: 'home' | 'cart' = 'home') {
 export function reviewCheckout() { Keyboard.dismiss(); router.dismissTo('/checkout'); }
 export function openPayment() { Keyboard.dismiss(); router.navigate('/payment'); }
 export function openOrders() { router.navigate('/orders'); }
+export function openTracking(id: string) { router.navigate({ pathname: '/tracking', params: { id } }); }
 export function openReceipt(id: string) { router.navigate({ pathname: '/orders/[id]', params: { id } }); }
 export function confirmOrder(id: string) { router.replace({ pathname: '/order-confirmation', params: { id } }); }

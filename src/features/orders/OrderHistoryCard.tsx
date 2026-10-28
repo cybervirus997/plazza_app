@@ -7,7 +7,7 @@ import { colors, ui } from '../../theme/tokens';
 import { orderSummary } from './orderPresentation';
 import { fulfillmentStatuses } from './statusPresentation';
 
-export const OrderHistoryCard = memo(function OrderHistoryCard({ order, reconciling, onOpen }: { order: Order; reconciling: boolean; onOpen(id: string): void }) {
+export const OrderHistoryCard = memo(function OrderHistoryCard({ order, reconciling, onOpen, onTrack }: { order: Order; reconciling: boolean; onOpen(id: string): void; onTrack?(id: string): void }) {
   const summary = orderSummary(order);
   return <View style={[styles.card, reconciling && styles.reconciling]}>
     <View style={styles.header}><StatusBadge {...fulfillmentStatuses[order.status]} /><Text style={styles.total}>{summary.total}</Text></View>
@@ -19,6 +19,7 @@ export const OrderHistoryCard = memo(function OrderHistoryCard({ order, reconcil
     {reconciling && <StatusBadge label="Checkout reconciliation pending" tone="pending" icon="clock" />}
     <View style={styles.footer}><Text style={styles.note}>Local demo · no fulfillment</Text>
       <Button label="View Details" accessibilityLabel={`View order ${order.id}`} variant="secondary" onPress={() => onOpen(order.id)} /></View>
+    {onTrack && <Button label="Track Demo Order" accessibilityLabel={`Track demo order ${order.id}`} variant="quiet" onPress={() => onTrack(order.id)} />}
   </View>;
 });
 const styles = StyleSheet.create({

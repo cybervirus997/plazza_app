@@ -1,14 +1,14 @@
 # Current milestone
 
-B — independent simulated Tracking and illustrative map. A completed: compact cart/coupons, stable short references/selectable IDs and compact feedback. Master request authorizes A → B → C → D sequentially.
+C — Family Care recipients, refill proposals and native reminder reconciliation. B completed with separate tracking events and stage-aware demo ETA/map. A completed: compact cart/coupons, stable short references/selectable IDs and compact feedback. Master request authorizes A → B → C → D sequentially.
 
 ## Required source files
 
-domain/tracking; TrackingRepository/local adapter; independent versioned-record storage; features/tracking; tracking route and finalized-order entries.
+domain/carePlans and recurrence; CarePlanRepository/local adapter; features/care provider/forms/review/reminders; explicit atomic shopping reducer proposal import.
 
 ## Acceptance criteria
 
-Independent durable event transitions, invalid/duplicate/corrupt/unsupported safeguards; finalized-order eligibility; stage-aware demo ETA; accessible dummy map; unchanged receipts.
+Independent recipients/plans; timezone/month-end recurrence; notification denial/failure does not block in-app reminders; pause/resume/skip/delete cancel/reschedule; current-price review, missing-address checks and explicit cart collision choice; no automatic order/payment.
 
 ## Known risks
 
@@ -20,4 +20,4 @@ Targeted affected Jest cases; npm run typecheck; npm run lint; git diff --check.
 
 ## Remaining work
 
-A gate passed: typecheck/lint/diff and 91 affected tests / 6 suites, including recovery injection. Complete B, then Family Care/reminders C and Mock AutoPay/final audit D. Preserve 491 baseline tests and all crash injection cases. Update this file at each gate.
+A gate passed: typecheck/lint/diff and 91 affected tests / 6 suites, including recovery injection. B gate passed: typecheck/lint/diff and 71 tests / 4 suites. Complete C, then Mock AutoPay/final audit D. Preserve 491 baseline tests and all crash injection cases. Update this file at each gate.
