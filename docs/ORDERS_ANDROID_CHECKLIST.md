@@ -15,3 +15,14 @@ Not performed by automated tests or Hermes export. Use an existing SDK-compatibl
 11. **Permission regressions.** Verify denied/blocked/granted foreground location, permission status Refresh without unnecessary GPS, explicit Update Location, GPS disabled and return from Settings. Saved addresses/orders must survive GPS revocation. Android Expo Go must retain notification-unavailable safeguards; custom builds must retain channel/notification permissions.
 
 Record actual pass/fail evidence. A passing JavaScript test suite, static preflight or `.hbc` export is not APK installation or native runtime verification.
+
+## P2 stabilization transition and presentation checks
+
+- On a real Android build, observe Cart → Checkout → Payment and Home → Orders → Receipt: forward screens enter from the right, Back exits toward the right, and Home/Cart tabs switch without a stack slide. Check both toolbar and system Back.
+- From Checkout, choose a method/evening preference, Edit Cart, then Proceed again. Verify one retained tabs entry and preserved review choices. Repeat several times; Back must not walk through duplicate Cart/Home stacks.
+- Open Receipt from History, then from Confirmation; Back must return to its actual origin. Complete checkout and repeatedly Back: finalized Pay must not reappear or create another order. Continue Shopping should return to the original tabs stack.
+- Turn Reduce Motion / Android animation scale off and on while using the app. Verify the preference disables transitions without remounting shopping or losing an attempt. Jest proves preference handling, not native animation appearance.
+- Exercise success, pending, failed, cancelled and reconciliation states: icon, heading, explanation and actions must be distinct. Pending/reconciliation must not have a success check or claim a completed order. COD must say no cash was collected. Check TalkBack announcements and disabled/selected controls.
+- Use a small display and large font scale: verify status headings, totals, product preview, saved address, itemized receipt and sticky actions wrap/read correctly. Real visual inspection remains outstanding in this implementation.
+- Open/close Cart's coupon keyboard and the address form keyboard. Android should resize once without shaking or input remounting; iOS still needs its existing padding behavior. Try unsaved form Back and Back during save; verify the guard is preserved.
+- Start a delayed payment/selection, leave the screen, refocus it before completion and trigger duplicate taps. Late callbacks from the old visit must not steal navigation. The saved intent/outcome must remain recoverable.
