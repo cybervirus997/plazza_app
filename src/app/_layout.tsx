@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PermissionProvider } from '../features/permissions/PermissionProvider';
+import { AddressBookProvider } from '../features/addresses/AddressBookProvider';
 import { AppStateProvider, useShopping } from '../state/AppStateProvider';
 import { colors, ui } from '../theme/tokens';
 
@@ -21,10 +22,12 @@ export default function RootLayout() {
     <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, primary: colors.primary } }}>
       <SafeAreaProvider>
         <AppStateProvider>
-          <PermissionProvider>
-            <StatusBar style="dark" />
-            <Routes />
-          </PermissionProvider>
+          <AddressBookProvider>
+            <PermissionProvider>
+              <StatusBar style="dark" />
+              <Routes />
+            </PermissionProvider>
+          </AddressBookProvider>
         </AppStateProvider>
       </SafeAreaProvider>
     </ThemeProvider>

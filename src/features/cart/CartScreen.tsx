@@ -9,6 +9,7 @@ import { useShopping } from '../../state/AppStateProvider';
 import { colors, formatMoney, ui } from '../../theme/tokens';
 import { BillSummary } from './BillSummary';
 import { CouponSection } from './CouponSection';
+import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
 
 export default function CartScreen() {
   const { items, itemCount, bill, dispatch } = useShopping();
@@ -21,6 +22,7 @@ export default function CartScreen() {
           <Text accessibilityRole="header" style={ui.title}>Your care bag<Text style={styles.count}> {itemCount ? `(${itemCount})` : ''}</Text></Text>
           <Text style={ui.body}>{items.length ? 'Everything you need, all in one place.' : 'Good care starts with the essentials.'}</Text>
           <NoticeBanner />
+          <DeliveryAddressEntry />
         </View>}
         renderItem={({ item }) => <MedicineCard medicine={item.medicine} quantity={item.quantity} inCart />}
         ListEmptyComponent={<View style={styles.empty}>

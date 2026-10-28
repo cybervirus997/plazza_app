@@ -15,6 +15,7 @@ import { useShopping } from '../../state/AppStateProvider';
 import { colors, ui } from '../../theme/tokens';
 import { DeliveryLocation, PermissionPanel } from '../permissions/PermissionPanel';
 import { useMedicineSearch } from '../search/useMedicineSearch';
+import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
 
 const SUGGESTION_LIMIT = 6;
 type HomeRow = ReturnType<typeof resolveHomeSections>[number] | { kind: 'result'; id: string; medicine: Medicine };
@@ -65,6 +66,7 @@ export default function HomeScreen() {
       </View>
       <Text style={styles.brandTag}>YOUR EVERYDAY CARE</Text>
     </View>
+    <DeliveryAddressEntry />
     <DeliveryLocation />
     <PermissionPanel compact />
     <View style={styles.searchBox}>

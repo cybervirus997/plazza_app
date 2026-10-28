@@ -8,6 +8,7 @@ import BrowseScreen from '../src/features/search/BrowseScreen';
 import { catalogData } from '../src/data/catalog';
 import { decodeSnapshot } from '../src/storage/persistence';
 import { AppStateProvider } from '../src/state/AppStateProvider';
+import { AddressBookProvider } from '../src/features/addresses/AddressBookProvider';
 import type { CatalogRepository } from '../src/repositories/CatalogRepository';
 import { localCatalogRepository } from '../src/repositories/local/LocalCatalogRepository';
 
@@ -64,7 +65,7 @@ test('Home searches the supplied names/salts and Add keeps Home and Cart quantit
   const root = createRoot();
   try {
     await act(async () => {
-      root.render(<AppStateProvider><HomeScreen /><CartScreen /></AppStateProvider>);
+      root.render(<AddressBookProvider><AppStateProvider><HomeScreen /><CartScreen /></AppStateProvider></AddressBookProvider>);
     });
     const search = labelled(root, 'Search medicines by name or salt')[0];
     await act(async () => { invoke(search, 'onChangeText', '  dolo  '); });
@@ -97,7 +98,7 @@ import { router } from 'expo-router';
 test('Home previews real medicines without typing and opens Browse without recording a search', async () => {
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     expect(textContent(root.container)).toContain('57 products · 15 medicines + 42 demo essentials');
     expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(2);
     expect(labelled(root, 'Add Azithral 500 to cart')).toHaveLength(1);
@@ -112,7 +113,7 @@ test('autocomplete caps suggestions at six and selecting a medicine commits only
   jest.useFakeTimers();
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     const search = labelled(root, 'Search medicines by name or salt')[0];
     await act(async () => { invoke(search, 'onChangeText', 'a'); });
     expect(textContent(root.container)).toContain('Finding matching medicines');
@@ -150,7 +151,7 @@ test('View All routes the full canonical query and keyboard submission commits t
   jest.useFakeTimers();
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     const search = labelled(root, 'Search medicines by name or salt')[0];
     await act(async () => { invoke(search, 'onChangeText', ' para '); });
     await act(async () => { await jest.advanceTimersByTimeAsync(150); });
@@ -175,7 +176,7 @@ test('a no-match query has a helpful state and clearing restores the catalog pre
   jest.useFakeTimers();
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     await act(async () => { invoke(labelled(root, 'Search medicines by name or salt')[0], 'onChangeText', 'no-such-medicine'); });
     await act(async () => { await jest.advanceTimersByTimeAsync(150); });
     expect(textContent(root.container)).toContain('No products found');
@@ -192,7 +193,7 @@ test('Home, Browse, and Cart share preview additions and quantity updates', asyn
   const root = createRoot();
   try {
     await act(async () => {
-      root.render(<AppStateProvider><HomeScreen /><BrowseScreen /><CartScreen /></AppStateProvider>);
+      root.render(<AddressBookProvider><AppStateProvider><HomeScreen /><BrowseScreen /><CartScreen /></AppStateProvider></AddressBookProvider>);
     });
     expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(3);
     await act(async () => { invoke(labelled(root, 'Add Dolo 650 to cart')[0], 'onPress'); });
@@ -207,7 +208,7 @@ test('Home reports catalog failure instead of silently showing an empty discover
   jest.replaceProperty(catalogData, 'medicines', []);
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     expect(textContent(root.container)).toContain('Medicines are unavailable');
     expect(textContent(root.container)).toContain('The medicine catalog could not be loaded.');
     expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(0);
@@ -222,7 +223,7 @@ test('Home reports catalog failure instead of silently showing an empty discover
 test('Home category and banner CTAs open the configured category without committing searches', async () => {
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     await act(async () => { invoke(labelled(root, 'Browse Baby care')[0], 'onPress'); });
     expect(router.push).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'baby-care' } });
     await act(async () => { invoke(labelled(root, 'Explore daily wellness')[0], 'onPress'); });
@@ -235,7 +236,7 @@ test('demo products are searchable and cartable through the same shared cart wit
   jest.useFakeTimers();
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><HomeScreen /><CartScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /><CartScreen /></AppStateProvider></AddressBookProvider>); });
     await act(async () => { invoke(labelled(root, 'Search medicines by name or salt')[0], 'onChangeText', 'baby wipes'); });
     await act(async () => { await jest.advanceTimersByTimeAsync(150); });
     expect(textContent(root.container)).toContain('Demo item');
@@ -260,7 +261,7 @@ test('Home exposes loading before an injected repository resolves and does not o
   };
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider repository={repository}><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider repository={repository}><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     expect(labelled(root, 'Loading catalog')).toHaveLength(1);
     expect(AsyncStorage.setItem).not.toHaveBeenCalled();
     await act(async () => { resolve(await localCatalogRepository.load()); });
@@ -273,8 +274,21 @@ test('an empty repository result has a useful empty state instead of empty confi
   const repository: CatalogRepository = { load: async () => [], search: async () => [] };
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider repository={repository}><HomeScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider repository={repository}><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     expect(textContent(root.container)).toContain('No products found');
     expect(labelled(root, 'See all Daily wellness')).toHaveLength(0);
+  } finally { await act(async () => { root.unmount(); }); }
+});
+
+test('both Home and Cart open the independent delivery address selector without changing shopping state', async () => {
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /><CartScreen /></AppStateProvider></AddressBookProvider>); });
+    const entries = labelled(root, 'Choose delivery address');
+    expect(entries).toHaveLength(2);
+    await act(async () => { invoke(entries[0], 'onPress'); invoke(entries[1], 'onPress'); });
+    expect(router.push).toHaveBeenNthCalledWith(1, '/addresses');
+    expect(router.push).toHaveBeenNthCalledWith(2, '/addresses');
+    expect(recentSearches()).toEqual([]);
   } finally { await act(async () => { root.unmount(); }); }
 });

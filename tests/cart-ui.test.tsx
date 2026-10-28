@@ -5,6 +5,7 @@ import { createRoot, type Root, type TestInstance, type TestNode } from 'test-re
 
 import CartScreen from '../src/features/cart/CartScreen';
 import { AppStateProvider } from '../src/state/AppStateProvider';
+import { AddressBookProvider } from '../src/features/addresses/AddressBookProvider';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -53,7 +54,7 @@ test('coupon validation is visible at the form and a valid coupon updates the bi
   jest.mocked(AsyncStorage.getItem).mockResolvedValue(snapshot());
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><CartScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><CartScreen /></AppStateProvider></AddressBookProvider>); });
     await act(async () => { invoke(labelled(root, 'Coupon code'), 'onChangeText', 'INVALID'); });
     await act(async () => { invoke(labelled(root, 'Apply'), 'onPress'); });
     const feedback = labelled(root, 'Coupon feedback');
@@ -71,7 +72,7 @@ test('reducing an eligible cart displays auto-removal beside the coupon form and
   jest.mocked(AsyncStorage.getItem).mockResolvedValue(snapshot('FLAT50'));
   const root = createRoot();
   try {
-    await act(async () => { root.render(<AppStateProvider><CartScreen /></AppStateProvider>); });
+    await act(async () => { root.render(<AddressBookProvider><AppStateProvider><CartScreen /></AppStateProvider></AddressBookProvider>); });
     expect(textContent(root.container)).toContain('✓ FLAT50 applied');
     await act(async () => { invoke(labelled(root, 'Decrease Pan 40 quantity'), 'onPress'); });
     expect(textContent(labelled(root, 'Coupon feedback'))).toContain('FLAT50 was removed.');
