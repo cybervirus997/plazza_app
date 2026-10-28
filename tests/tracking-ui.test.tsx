@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: jest.requireActual('./native-
   }, router: {},
 }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
+jest.mock('expo-router/react-navigation', () => ({ useHeaderHeight: () => 64 }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: { children: ReactNode }) => children }));
 function content(node: TestNode): string { return typeof node === 'string' ? node : node.children.map(content).join(''); }
 beforeEach(() => { mockData.clear(); mockOrder = testOrder(); mockFinalized = true; });

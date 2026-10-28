@@ -2,6 +2,7 @@ import { addMedicine, cartCount, clearCart, decreaseQuantity, getItemTotal, remo
 import { evaluateCoupon, normalizeCouponCode, redeemCoupon } from '../domain/coupons';
 import { addRecentSearch } from '../domain/search';
 import { emptyShoppingState, type Medicine, type ShoppingState } from '../domain/types';
+import { reviewedCareCart } from '../domain/careCart';
 
 export interface Notice {
   readonly id: number;
@@ -17,6 +18,7 @@ export interface AppState extends ShoppingState {
 }
 
 export type AppAction =
+  | { type: 'review-care-cart'; cart: ShoppingState['cart']; expectedCart: ShoppingState['cart']; mode: 'merge' | 'replace' }
   | { type: 'checkout-lock'; locked: boolean }
   | { type: 'checkout-finalized'; checkoutId: string; snapshot: ShoppingState }
   | { type: 'hydrate'; snapshot: ShoppingState; warning?: string }
@@ -70,6 +72,14 @@ export function createAppReducer(catalog: readonly Medicine[]) {
     // User actions never race ahead of restoration and get overwritten by it.
     if (!state.hydrated || (state.checkoutLocked && action.type !== 'dismiss-notice')) return state;
     switch (action.type) {
+      case 'review-care-cart': {
+        try {
+          if (JSON.stringify(state.cart) !== JSON.stringify(action.expectedCart)) throw new Error('Your cart changed. Review the merge or replacement again.');
+          const cart = reviewedCareCart(state.cart, action.cart, catalog, action.mode);
+          const checked = revalidateCoupon({ ...state, cart }, catalog);
+          return withNotice({ ...state, ...checked.snapshot }, checked.removalMessage ?? 'Care proposal added. Review your cart and current prices before checkout.', checked.removalMessage ? 'auto-removal' : 'info');
+        } catch (error: unknown) { return withNotice(state, error instanceof Error ? error.message : 'Care proposal could not be imported.', 'error'); }
+      }
       case 'add':
       case 'increase':
       case 'decrease':

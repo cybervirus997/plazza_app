@@ -11,6 +11,7 @@ Local source is authoritative. Read AGENTS.md and ENGINEERING_STANDARDS.md; reco
 | `addresses`, `address-form` | `features/addresses/AddressBookScreen`, `AddressFormScreen` |
 | `checkout`, `payment`, `order-confirmation` | Corresponding `features/orders/*Screen` |
 | `orders/index`, `orders/[id]` | `OrderHistoryScreen`, `OrderDetailsScreen` |
+| `care`, `care/recipient`, `care/plan`, `care/review` | `features/care`: list, recipient/plan forms and current-catalog review |
 | `tracking` | `features/tracking/TrackingScreen`, useOrderTracking, TrackingTimeline, DemoRouteMap |
 | `app-permissions`, `scan-medicine` | `features/permissions/AppPermissionsScreen`, `features/scan/ScanDemoScreen` |
 
@@ -35,6 +36,8 @@ Local source is authoritative. Read AGENTS.md and ENGINEERING_STANDARDS.md; reco
 | `plazza.addresses.v1` | v1 independent address book; LocalAddressRepository |
 | `plazza.payments.v1` | v1 latest durable attempt; LocalPaymentRepository |
 | `plazza.checkout.v1` | v1 immutable pending intent; features/orders/checkout |
+| `plazza.care.v1` | v1 independent recipient/plan records, revision guards; LocalCarePlanRepository |
+| `plazza.reminders.v1` | v1 native reminder identifier ledger; care/reminders |
 | `plazza.tracking.v1` | v1 independent immutable tracking-event records; LocalTrackingRepository |
 | `plazza.orders.v1` | v1 immutable receipts; LocalOrderRepository |
 
@@ -60,6 +63,6 @@ Local source is authoritative. Read AGENTS.md and ENGINEERING_STANDARDS.md; reco
 
 Tracking implemented: `domain/tracking`, TrackingRepository/local adapter, `features/tracking`; separate versioned event history linked by orderId, never receipt edits. Tracking tests cover ordering, idempotency, corruption, restart, lost acknowledgements and eligibility; tracking-ui verifies recovery/unknown/Rx/map semantics. `storage/versionedRecords` serializes independent single-key feature writes and fails closed; it is never a shopping writer.
 
-Family Care: `domain/carePlans`, CarePlanRepository/local adapter, `features/care`; independent recipients/plans and reminder reconciliation. A proposal enters the one shopping reducer only after explicit review/cart-collision choice. Native reminders never order/pay.
+Family Care implemented: `domain/carePlans`, CarePlanRepository/local adapter, `features/care`; independent recipients/plans and reminder reconciliation. A proposal enters the one shopping reducer only after explicit review/cart-collision choice. Native reminders never order/pay. `careRecurrence` handles wall-clock timezone/DST/month-end anchors. `careCart` and the existing reducer validate an explicit merge/replace against the expected cart; the existing writer alone persists it. `CareProvider` reconciles OS identifiers on startup/foreground and plan changes without prompting. Due dates remain usable if scheduling fails or is denied. Care tests cover recurrence, repositories, proposal UI/locks, native best-effort/privacy and reminder recovery.
 
 Mock AutoPay: independent versioned preview model linked to a care plan; explicit opt-in, no credentials, mandate registration, payment or order creation.

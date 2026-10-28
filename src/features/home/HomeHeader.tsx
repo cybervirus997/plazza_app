@@ -12,6 +12,7 @@ export function HomeHeader() {
       <Text accessibilityRole="header" style={styles.name}>Plazza</Text>
     </View>
     <View style={styles.actions}>
+      <Button label="Family Care" variant="quiet" onPress={() => router.navigate('/care')} />
       <Button label="Orders" variant="quiet" onPress={openOrders} />
       <IconButton icon="settings" label="App permissions and diagnostics" onPress={() => router.navigate('/app-permissions')} />
     </View>

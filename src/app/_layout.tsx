@@ -10,6 +10,7 @@ import { colors, ui } from '../theme/tokens';
 import { stackOptions, quietStackOptions, returningScreenOptions } from '../navigation/commerceNavigation';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { CheckoutPreferencesProvider } from '../features/orders/CheckoutPreferences';
+import { CareProvider } from '../features/care/CareProvider';
 
 export { ErrorBoundary } from 'expo-router';
 export const unstable_settings = { anchor: '(tabs)' };
@@ -45,7 +46,7 @@ export default function RootLayout() {
           <AddressBookProvider>
             <PermissionProvider>
               <StatusBar style="dark" />
-              <CheckoutPreferencesProvider><Routes /></CheckoutPreferencesProvider>
+              <CareProvider><CheckoutPreferencesProvider><Routes /></CheckoutPreferencesProvider></CareProvider>
             </PermissionProvider>
           </AddressBookProvider>
         </AppStateProvider>

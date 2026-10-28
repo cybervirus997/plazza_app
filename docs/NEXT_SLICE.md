@@ -1,14 +1,14 @@
 # Current milestone
 
-C — Family Care recipients, refill proposals and native reminder reconciliation. B completed with separate tracking events and stage-aware demo ETA/map. A completed: compact cart/coupons, stable short references/selectable IDs and compact feedback. Master request authorizes A → B → C → D sequentially.
+D — Mock AutoPay preview, maintainability audit, final regression/export and Android handoff. C completed: independent care data, timezone recurrence, best-effort reminders and explicit reviewed cart import. B completed with separate tracking events and stage-aware demo ETA/map. A completed: compact cart/coupons, stable short references/selectable IDs and compact feedback. Master request authorizes A → B → C → D sequentially.
 
 ## Required source files
 
-domain/carePlans and recurrence; CarePlanRepository/local adapter; features/care provider/forms/review/reminders; explicit atomic shopping reducer proposal import.
+domain/mockMandates; MockMandateRepository/local adapter; features/care MockAutoPay screen/link; CODEBASE_MAP, engineering standards and final Android checklist.
 
 ## Acceptance criteria
 
-Independent recipients/plans; timezone/month-end recurrence; notification denial/failure does not block in-app reminders; pause/resume/skip/delete cancel/reschedule; current-price review, missing-address checks and explicit cart collision choice; no automatic order/payment.
+Explicit opt-in and confirmation for independent simulated mandate statuses/cap/schedule; preview uses current catalog and never writes orders/revenue; no credentials, gateway, mandate registration or automatic purchase. Final audit and all 491 baseline/crash tests preserved.
 
 ## Known risks
 
@@ -20,4 +20,4 @@ Targeted affected Jest cases; npm run typecheck; npm run lint; git diff --check.
 
 ## Remaining work
 
-A gate passed: typecheck/lint/diff and 91 affected tests / 6 suites, including recovery injection. B gate passed: typecheck/lint/diff and 71 tests / 4 suites. Complete C, then Mock AutoPay/final audit D. Preserve 491 baseline tests and all crash injection cases. Update this file at each gate.
+A gate passed: typecheck/lint/diff and 91 affected tests / 6 suites, including recovery injection. B gate passed: typecheck/lint/diff and 71 tests / 4 suites. C gate passed: typecheck/lint/diff and 99 affected tests / 9 suites. Complete D and the full final gate. Existing scheduled delivery remains only an ASAP/scheduled preference, not a reserved slot; refill dates are independent. Preserve 491 baseline tests and all crash injection cases. Update this file at each gate.

@@ -26,6 +26,7 @@ jest.mock('../src/state/AppStateProvider', () => ({
 }));
 jest.mock('../src/features/addresses/AddressBookProvider', () => ({ AddressBookProvider: ({ children }: { children: ReactNode }) => children }));
 jest.mock('../src/features/permissions/PermissionProvider', () => ({ PermissionProvider: ({ children }: { children: ReactNode }) => children }));
+jest.mock('../src/features/care/CareProvider', () => ({ CareProvider: ({ children }: { children: ReactNode }) => children }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaProvider: ({ children }: { children: ReactNode }) => children }));
 jest.mock('../src/hooks/useReducedMotion', () => ({ useReducedMotion: () => mockReducedMotion }));
 jest.mock('expo-status-bar', () => ({ StatusBar: () => null }));
