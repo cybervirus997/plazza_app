@@ -17,6 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: jest.fn().mockResolvedValue(null), setItem: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock('expo-router', () => ({
+  Stack: { Screen: jest.requireActual('./native-header').MockStackScreen },
   useLocalSearchParams: () => ({}),
   router: { navigate: jest.fn(), push: jest.fn() },
 }));
@@ -104,7 +105,7 @@ test('Home previews real medicines without typing and opens Browse without recor
     expect(labelled(root, 'Add Azithral 500 to cart')).toHaveLength(1);
     expect(textContent(root.container)).toContain('Rx · Prescription required');
     await act(async () => { invoke(labelled(root, 'Browse all medicines')[0], 'onPress'); });
-    expect(router.push).toHaveBeenCalledWith('/browse');
+    expect(router.navigate).toHaveBeenCalledWith('/browse');
     expect(recentSearches()).toEqual([]);
   } finally { await act(async () => { root.unmount(); }); }
 });
@@ -157,7 +158,7 @@ test('View All routes the full canonical query and keyboard submission commits t
     await act(async () => { await jest.advanceTimersByTimeAsync(150); });
     expect(labelled(root, 'Add Crocin Advance to cart')).toHaveLength(1);
     await act(async () => { invoke(labelled(root, 'View all matching medicines')[0], 'onPress'); });
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/browse', params: { query: 'para' } });
+    expect(router.navigate).toHaveBeenCalledWith({ pathname: '/browse', params: { query: 'para' } });
     expect(recentSearches()).toEqual(['para']);
 
     await act(async () => { invoke(search, 'onChangeText', 'cet'); });
@@ -225,9 +226,9 @@ test('Home category and banner CTAs open the configured category without committ
   try {
     await act(async () => { root.render(<AddressBookProvider><AppStateProvider><HomeScreen /></AppStateProvider></AddressBookProvider>); });
     await act(async () => { invoke(labelled(root, 'Browse Baby care')[0], 'onPress'); });
-    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'baby-care' } });
+    expect(router.navigate).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'baby-care' } });
     await act(async () => { invoke(labelled(root, 'Explore daily wellness')[0], 'onPress'); });
-    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'daily-wellness' } });
+    expect(router.navigate).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'daily-wellness' } });
     expect(recentSearches()).toEqual([]);
   } finally { await act(async () => { root.unmount(); }); }
 });

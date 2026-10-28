@@ -57,7 +57,7 @@ export default function HomeScreen() {
 
   function viewAllMatches() {
     commitSearch();
-    router.push({ pathname: '/browse', params: { query: query.trim() } });
+    router.navigate({ pathname: '/browse', params: { query: query.trim() } });
   }
 
   const header = <View style={styles.header}>
@@ -91,7 +91,7 @@ export default function HomeScreen() {
           <View style={ui.flex}><Text style={ui.label}>CARE, WITHIN REACH</Text><Text style={styles.discoveryTitle}>Find your everyday essentials</Text></View>
         </View>
         <Text style={ui.body}>Medicines and everyday essentials, together in one demo catalog.</Text>
-        <Button label="Browse all medicines" disabled={catalogStatus !== 'ready'} onPress={() => router.push('/browse')} />
+        <Button label="Browse all medicines" disabled={catalogStatus !== 'ready'} onPress={() => router.navigate('/browse')} />
         {catalogStatus === 'ready' && <Text style={ui.small}>{catalog.length} products · {catalog.length - demoCount} medicines + {demoCount} demo essentials</Text>}
       </View>
       <CategoryStrip />
@@ -134,7 +134,7 @@ export default function HomeScreen() {
                 <Button label="Clear search" variant="secondary" onPress={() => typeQuery('')} /></>}
       </View>}
       ListFooterComponent={<View style={styles.footer}>
-        {hasQuery && <Button label="Browse all medicines" variant="quiet" disabled={catalogStatus !== 'ready'} onPress={() => router.push('/browse')} />}
+        {hasQuery && <Button label="Browse all medicines" variant="quiet" disabled={catalogStatus !== 'ready'} onPress={() => router.navigate('/browse')} />}
         <Text style={styles.trust}>Thoughtful care. Clear pricing.</Text>
       </View>} />
   </SafeAreaView>;

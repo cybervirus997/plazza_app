@@ -12,7 +12,7 @@ type ResolvedSection = ReturnType<typeof resolveHomeSections>[number];
 export function HomeSection({ section }: { section: ResolvedSection }) {
   const { state } = useShopping();
   const { width } = useWindowDimensions();
-  const openCategory = () => router.push({ pathname: '/browse',
+  const openCategory = () => router.navigate({ pathname: '/browse',
     params: section.categoryId ? { categoryId: section.categoryId } : {} });
 
   if (section.kind === 'offer') return <View style={styles.offer}>

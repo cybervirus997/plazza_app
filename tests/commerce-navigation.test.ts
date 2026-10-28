@@ -15,7 +15,7 @@ jest.mock('expo-router', () => ({
   },
 }));
 function navigation(initial = '(tabs)') {
-  const routeNames = ['(tabs)', 'checkout', 'payment', 'order-confirmation', 'orders/index', 'orders/[id]', 'addresses', 'address-form'];
+  const routeNames = ['(tabs)', 'browse', 'checkout', 'payment', 'order-confirmation', 'orders/index', 'orders/[id]', 'addresses', 'address-form'];
   const engine = StackRouter({});
   let state: StackNavigationState<Record<string, object | undefined>> = { stale: false, type: 'stack', key: 'root', routeKeySeq: 1,
     index: 0, routeNames, routes: [{ key: 'initial', name: initial }] };
@@ -50,6 +50,16 @@ test('Edit Cart and tab returns pop the existing tabs route instead of accumulat
   expect(nav.state().routes[0].key).toBe(tabsKey);
   expect(router.dismissTo).toHaveBeenLastCalledWith('/cart');
   returnToShop('home'); expect(nav.names()).toEqual(['(tabs)']);
+});
+test('rapid repeated Browse entries reuse one detail route and Back returns to the original tabs', () => {
+  const previous = navigation(); mockApply('PUSH', '/browse'); mockApply('PUSH', '/browse');
+  expect(previous.names()).toEqual(['(tabs)', 'browse', 'browse']);
+  const nav = navigation(); const tabsKey = nav.state().routes[0].key;
+  router.navigate('/browse'); router.navigate('/browse');
+  expect(nav.names()).toEqual(['(tabs)', 'browse']);
+  backTo('/');
+  expect(nav.names()).toEqual(['(tabs)']);
+  expect(nav.state().routes[0].key).toBe(tabsKey);
 });
 test('payment review uses an ancestor pop and repeated resume does not duplicate Payment', () => {
   const nav = navigation(); nav.checkout(); openPayment(); openPayment();

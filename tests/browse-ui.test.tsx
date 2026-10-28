@@ -17,12 +17,16 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: jest.fn().mockResolvedValue(null), setItem: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock('expo-router', () => ({
+  Stack: { Screen: jest.requireActual('./native-header').MockStackScreen },
   useLocalSearchParams: () => mockParams,
   router: { dismissTo: (path: string) => mockReplace(path), setParams: jest.fn(), navigate: jest.fn(), canGoBack: () => mockCanGoBack(), back: () => mockBack(), replace: (path: string) => mockReplace(path) },
 }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }: { children: ReactNode }) => children,
+  SafeAreaView: (props: { children: ReactNode }) => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    return React.createElement('SafeAreaView', props, props.children);
+  },
 }));
 jest.mock('react-native/Libraries/Components/Pressable/Pressable', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -59,6 +63,10 @@ test('Browse renders the whole catalog without typing and supports Add with maxQ
   const root = createRoot();
   try {
     await act(async () => { root.render(<AppStateProvider><BrowseScreen /></AppStateProvider>); });
+    expect(root.container.queryAll((node) => node.props.testID === 'native-stack-header')).toHaveLength(1);
+    expect(root.container.queryAll((node) => node.props.accessibilityRole === 'header'
+      && textContent(node) === 'Browse medicines & essentials', { matchDeepestOnly: true })).toHaveLength(1);
+    expect(root.container.queryAll((node) => node.type === 'SafeAreaView')[0].props.edges).toEqual(['left', 'right', 'bottom']);
     expect(textContent(root.container)).toContain('57 products in the demo catalog');
     // FlatList virtualizes the initial window; filtering makes each entry visible.
     const filter = labelled(root, 'Filter medicines by name or salt')[0];

@@ -13,6 +13,7 @@ import { CheckoutPreferencesProvider } from '../features/orders/CheckoutPreferen
 
 export { ErrorBoundary } from 'expo-router';
 export const unstable_settings = { anchor: '(tabs)' };
+const tabOptions = { ...returningScreenOptions, headerShown: false };
 
 function Routes() {
   const reducedMotion = useReducedMotion();
@@ -26,7 +27,7 @@ function Routes() {
     </View> : <ActivityIndicator accessibilityLabel="Restoring your shopping bag" color={colors.primary} size="large" />}
   </View>;
   return <Stack screenOptions={reducedMotion ? quietStackOptions : stackOptions}>
-    <Stack.Screen name="(tabs)" options={returningScreenOptions} />
+    <Stack.Screen name="(tabs)" options={tabOptions} />
     <Stack.Screen name="checkout" options={returningScreenOptions} />
     <Stack.Screen name="addresses" options={returningScreenOptions} />
     <Stack.Screen name="orders/index" options={returningScreenOptions} />

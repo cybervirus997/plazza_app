@@ -11,7 +11,7 @@ export function CategoryStrip() {
     <FlatList horizontal data={categories} keyExtractor={(category) => category.id}
       showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}
       renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityLabel={`Browse ${item.title}`}
-        onPress={() => router.push({ pathname: '/browse', params: { categoryId: item.id } })} style={styles.category}>
+        onPress={() => router.navigate({ pathname: '/browse', params: { categoryId: item.id } })} style={styles.category}>
         <ProductImage imageKey={item.imageKey} /><Text style={styles.title}>{item.title}</Text>
       </Pressable>} />
   </View>;

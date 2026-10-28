@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MedicineCard } from '../../components/MedicineCard';
 import { Button } from '../../components/ui/Button';
+import { IconButton } from '../../components/ui/IconButton';
 import { NoticeBanner } from '../../components/ui/NoticeBanner';
 import { categories } from '../../data/categories';
 import { filterProducts } from '../catalog/products';
 import { useShopping } from '../../state/AppStateProvider';
-import { returnToShop } from '../../navigation/commerceNavigation';
-import { colors, space, ui } from '../../theme/tokens';
+import { backTo, returnToShop } from '../../navigation/commerceNavigation';
+import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
+import { colors, layout, radii, space, ui } from '../../theme/tokens';
 
 export default function BrowseScreen() {
   const params = useLocalSearchParams<{ query?: string; categoryId?: string }>();
@@ -22,8 +24,7 @@ export default function BrowseScreen() {
   const medicines = filterProducts(catalog, { query, categoryId });
 
   function goHome() {
-    if (router.canGoBack()) router.back();
-    else returnToShop();
+    backTo('/');
   }
 
   function submit() {
@@ -31,15 +32,12 @@ export default function BrowseScreen() {
     Keyboard.dismiss();
   }
 
-  return <SafeAreaView style={ui.screen}>
+  return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
+    <Stack.Screen options={{ ...headerOptions(category?.title ?? (categoryId ? 'Unknown category' : 'Browse medicines & essentials'), 'Back to Home', goHome),
+      headerRight: () => <Button label={`Cart (${itemCount})`} accessibilityLabel={`View cart, ${itemCount} items`}
+        variant="quiet" onPress={() => returnToShop('cart')} /> }} />
     <View style={styles.header}>
-      <View style={ui.between}>
-        <Button label="← Home" accessibilityLabel="Back to Home" variant="quiet" onPress={goHome} />
-        <Button label={`Cart (${itemCount})`} accessibilityLabel={`View cart, ${itemCount} items`}
-          variant="quiet" onPress={() => returnToShop('cart')} />
-      </View>
       <Text style={ui.label}>DEMO PRODUCT CATALOG</Text>
-      <Text accessibilityRole="header" style={ui.title}>{category?.title ?? (categoryId ? 'Unknown category' : 'Browse medicines & essentials')}</Text>
       <Text accessibilityLiveRegion="polite" style={ui.body}>
         {query.trim() || categoryId ? `${medicines.length} of ${catalog.length} products match` : `${catalog.length} products in the demo catalog`}
       </Text>
@@ -49,8 +47,7 @@ export default function BrowseScreen() {
         <TextInput accessibilityLabel="Filter medicines by name or salt" placeholder="Search products, medicines or ingredients"
           placeholderTextColor={colors.muted} value={query} onChangeText={setQuery} autoCorrect={false}
           returnKeyType="search" onSubmitEditing={submit} style={ui.input} />
-        {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear medicine filter"
-          onPress={() => setQuery('')} style={styles.clear}><Text style={styles.clearText}>×</Text></Pressable>}
+        {query.length > 0 && <IconButton icon="close" label="Clear medicine filter" onPress={() => setQuery('')} />}
       </View>
     </View>
     <FlatList data={medicines} keyExtractor={(medicine) => medicine.id} extraData={state.cart}
@@ -70,9 +67,7 @@ export default function BrowseScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: space.xl, paddingTop: space.sm, gap: space.md },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 16 },
+  header: { width: '100%', maxWidth: layout.contentWidth, alignSelf: 'center', paddingHorizontal: space.xl, paddingTop: space.sm, gap: space.md },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg },
   searchIcon: { marginLeft: space.lg },
-  clear: { minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
-  clearText: { fontSize: 24, color: colors.muted },
 });

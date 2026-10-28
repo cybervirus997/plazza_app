@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import { colors, ui } from '../../theme/tokens';
 import { useAddressBook } from './AddressBookProvider';
 import { backTo } from '../../navigation/commerceNavigation';
 import { useScreenCompletion } from '../../hooks/useScreenActive';
+import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
 
 export default function AddressBookScreen() {
   const addresses = useAddressBook();
@@ -18,14 +19,14 @@ export default function AddressBookScreen() {
       { text: 'Delete address', style: 'destructive', onPress: () => { void addresses.remove(address.id); } },
     ]);
   }
-  return <SafeAreaView style={ui.screen}>
+  return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
+    <Stack.Screen options={headerOptions('Your address book', 'Back from address book', goBack)} />
     <FlatList data={addresses.loading || !addresses.ready ? [] : addresses.book.addresses} keyExtractor={(address) => address.id}
       contentContainerStyle={ui.content} extraData={[addresses.book.selectedAddressId, addresses.book.defaultAddressId, addresses.busy]}
       ListHeaderComponent={<View style={styles.section}>
-        <View style={[ui.between, styles.actions]}><Button label="← Back" accessibilityLabel="Back from address book" variant="quiet" onPress={goBack} />
+        <View style={styles.actions}>
           <Button label="+ Add address" disabled={!addresses.ready || addresses.busy} onPress={() => router.navigate('/address-form')} /></View>
         <Text style={ui.label}>CARE, WHEREVER YOU CALL HOME</Text>
-        <Text accessibilityRole="header" style={ui.title}>Your address book</Text>
         <Text style={ui.body}>Save a place for yourself or someone you care about. Selecting a delivery address keeps your default unchanged.</Text>
         {addresses.warning && <Text accessibilityRole="alert" style={ui.body}>{addresses.warning}</Text>}
         {addresses.error && <View style={ui.card}><Text accessibilityRole="alert" style={ui.body}>{addresses.error}</Text>

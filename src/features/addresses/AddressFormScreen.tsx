@@ -1,4 +1,5 @@
-import { useLocalSearchParams, usePreventRemove } from 'expo-router';
+import { Stack, useLocalSearchParams, usePreventRemove } from 'expo-router';
+import { useHeaderHeight } from 'expo-router/react-navigation';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type TextInputProps } from 'react-native';
@@ -8,6 +9,7 @@ import { addressDraft, addressLabels, deliveryOptions, gateOptions, validateAddr
   type AddressDraft, type AddressErrors, type DeliveryAddress } from '../../domain/addresses';
 import { colors, ui } from '../../theme/tokens';
 import { backTo } from '../../navigation/commerceNavigation';
+import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
 import { useAddressBook } from './AddressBookProvider';
 import { useAddressLocation } from './useAddressLocation';
 
@@ -42,6 +44,7 @@ function returnToBook() { backTo('/addresses'); }
 
 function AddressForm({ address }: { address?: DeliveryAddress }) {
   const addresses = useAddressBook();
+  const headerHeight = useHeaderHeight();
   const [initial] = useState(() => addressDraft(address));
   const [draft, setDraft] = useState(initial);
   const [errors, setErrors] = useState<AddressErrors>({});
@@ -89,12 +92,12 @@ function AddressForm({ address }: { address?: DeliveryAddress }) {
       returnToBook();
     }
   }
-  return <SafeAreaView style={ui.screen}>
-    <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+  return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
+    <Stack.Screen options={headerOptions(address ? 'Edit address' : 'Add address', 'Back from address form', returnToBook, savingForm)} />
+    <KeyboardAvoidingView style={ui.flex} enabled={Platform.OS === 'ios'} behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={headerHeight}>
       <ScrollView contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        <View style={ui.between}><Button label="← Back" accessibilityLabel="Back from address form" variant="quiet" disabled={savingForm} onPress={returnToBook} />
-          <Text style={ui.label}>SAVED PLACES</Text></View>
-        <Text accessibilityRole="header" style={ui.title}>{address ? 'Edit your place' : 'Add a new place'}</Text>
+        <Text style={ui.label}>SAVED PLACES</Text>
         <Text style={ui.body}>A little detail makes the doorstep easier to find. Fields marked * are required.</Text>
         <View style={ui.card}>
           <Text style={ui.heading}>A name that feels familiar</Text>
@@ -153,10 +156,12 @@ export default function AddressFormScreen() {
   const addresses = useAddressBook();
   const id = typeof params.id === 'string' ? params.id : undefined;
   const address = addresses.book.addresses.find((item) => item.id === id);
-  if (addresses.loading) return <SafeAreaView style={ui.screen}><ActivityIndicator accessibilityLabel="Loading address form" color={colors.primary} /></SafeAreaView>;
-  if (!addresses.ready || (id && !address)) return <SafeAreaView style={[ui.screen, ui.content]}>
+  if (addresses.loading) return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
+    <Stack.Screen options={headerOptions('Address', 'Back from address form', returnToBook)} />
+    <ActivityIndicator accessibilityLabel="Loading address form" color={colors.primary} /></SafeAreaView>;
+  if (!addresses.ready || (id && !address)) return <SafeAreaView edges={headerContentEdges} style={[ui.screen, ui.content]}>
+    <Stack.Screen options={headerOptions('Address', 'Back to address book', returnToBook)} />
     <Text style={ui.heading}>{addresses.error ?? 'This address no longer exists.'}</Text>
-    <Button label="Back to address book" onPress={returnToBook} />
     {!addresses.ready && <Button label="Retry saved addresses" variant="secondary" onPress={addresses.reload} />}
   </SafeAreaView>;
   return <AddressForm key={id ?? 'new'} address={address} />;

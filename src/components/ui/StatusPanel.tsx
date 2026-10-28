@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, ui } from '../../theme/tokens';
+import { colors, statusColors, ui } from '../../theme/tokens';
 
 export type StatusTone = 'positive' | 'pending' | 'negative' | 'neutral';
 export type StatusIcon = 'check' | 'clock' | 'error' | 'cancel' | 'bag' | 'info';
@@ -8,10 +8,8 @@ export interface StatusPresentation {
   tone: StatusTone; icon: StatusIcon; label: string; heading: string; explanation: string;
 }
 const tones = {
-  positive: { ink: colors.primaryDark, background: colors.primarySoft, border: colors.primary },
-  pending: { ink: colors.amber, background: colors.amberSoft, border: colors.amber },
-  negative: { ink: colors.danger, background: colors.dangerSoft, border: colors.danger },
-  neutral: { ink: colors.muted, background: colors.background, border: colors.border },
+  positive: statusColors.positive, pending: statusColors.warning,
+  negative: statusColors.negative, neutral: statusColors.neutral,
 };
 const icons = {
   check: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },

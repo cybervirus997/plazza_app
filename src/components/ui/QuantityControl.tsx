@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Medicine } from '../../domain/types';
 import { useShopping } from '../../state/AppStateProvider';
-import { colors } from '../../theme/tokens';
+import { colors, controls } from '../../theme/tokens';
 import { Button } from './Button';
 
 export function QuantityControl({ medicine, quantity }: { medicine: Medicine; quantity: number }) {
@@ -29,7 +29,7 @@ export function QuantityControl({ medicine, quantity }: { medicine: Medicine; qu
 
 const styles = StyleSheet.create({
   control: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primarySoft, borderRadius: 14, borderWidth: 1, borderColor: colors.border },
-  step: { minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  step: { minWidth: controls.minTouch, minHeight: controls.minTouch, alignItems: 'center', justifyContent: 'center' },
   symbol: { color: colors.primary, fontSize: 22, fontWeight: '500' },
   quantity: { color: colors.primaryDark, fontWeight: '700', fontSize: 15, minWidth: 24, textAlign: 'center' },
   disabled: { opacity: 0.3 },

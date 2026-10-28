@@ -1,5 +1,5 @@
 import { act, type ReactNode } from 'react';
-import { Alert, Keyboard, type PressableProps } from 'react-native';
+import { Alert, Keyboard, Platform, type PressableProps } from 'react-native';
 import { createRoot, type Root, type TestInstance, type TestNode } from 'test-renderer';
 import { router } from 'expo-router';
 import { addressDraft, emptyAddressBook, type AddressBook, type AddressDraft } from '../src/domain/addresses';
@@ -21,6 +21,7 @@ const mockPermissions = { location: 'denied' as PermissionSnapshot['location'], 
 
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
 jest.mock('expo-router', () => ({
+  Stack: { Screen: jest.requireActual('./native-header').MockStackScreen },
   useFocusEffect: (effect: () => (() => void) | void) => { const React = jest.requireActual<typeof import('react')>('react'); React.useEffect(effect, [effect]); },
   router: { navigate: jest.fn(), push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissTo: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: () => mockParams,
@@ -28,9 +29,18 @@ jest.mock('expo-router', () => ({
     mockPreventRemove = { prevented, callback }; return mockDisablePrevention;
   },
 }));
+jest.mock('expo-router/react-navigation', () => ({ useHeaderHeight: () => 72 }));
+jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
+jest.mock('react-native/Libraries/Components/Keyboard/KeyboardAvoidingView', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return { __esModule: true, default: (props: { children: ReactNode }) => React.createElement('KeyboardAvoidingView', props, props.children) };
+});
 jest.mock('../src/features/permissions/PermissionProvider', () => ({ usePermissions: () => mockPermissions }));
 jest.mock('../src/features/permissions/permissions', () => ({ fetchDeliveryLocation: jest.fn() }));
-jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: { children: ReactNode }) => children }));
+jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: (props: { children: ReactNode }) => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return React.createElement('SafeAreaView', props, props.children);
+} }));
 jest.mock('react-native/Libraries/Components/Pressable/Pressable', () => {
   const React = jest.requireActual<typeof import('react')>('react');
   const state = { pressed: false, hovered: false };
@@ -123,6 +133,21 @@ test('validation stays in the form, keeps input instances stable and does not wr
     expect(labelled(app.root, 'Address line / building *')).toBe(input);
     expect(labelled(app.root, 'Address line / building *').props.value).toBe('Changed once');
     expect(port.setItem).not.toHaveBeenCalled();
+  } finally { await app.unmount(); }
+});
+
+test.each(['android', 'ios'] as const)('address form accounts for the native header without double keyboard adjustment on %s', async (platform) => {
+  jest.replaceProperty(Platform, 'OS', platform);
+  const { port } = storage();
+  const app = await mount(createLocalAddressRepository(port));
+  try {
+    const safeArea = app.root.container.queryAll((node) => node.type === 'SafeAreaView')[0];
+    expect(safeArea.props.edges).toEqual(['left', 'right', 'bottom']);
+    const keyboard = app.root.container.queryAll((node) => node.type === 'KeyboardAvoidingView')[0];
+    expect(keyboard.props).toMatchObject({ enabled: platform === 'ios', keyboardVerticalOffset: 72 });
+    expect(keyboard.props.behavior).toBe(platform === 'ios' ? 'padding' : undefined);
+    expect(app.root.container.queryAll((node) => node.props.testID === 'native-stack-header')).toHaveLength(1);
+    expect(textContent(app.root.container)).toContain('Add address');
   } finally { await app.unmount(); }
 });
 

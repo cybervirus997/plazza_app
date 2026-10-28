@@ -1,3 +1,4 @@
+import { Stack } from 'expo-router';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
@@ -6,16 +7,17 @@ import { colors, ui } from '../../theme/tokens';
 import { OrderHistoryCard } from './OrderHistoryCard';
 import { unresolvedPayment } from '../../domain/payments';
 import { useOrderHistory } from './useOrders';
-import { openPayment, openReceipt, returnToShop } from '../../navigation/commerceNavigation';
+import { backTo, openPayment, openReceipt, returnToShop } from '../../navigation/commerceNavigation';
+import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
 
 export default function OrderHistoryScreen() {
   const { orders, payment } = useShopping();
   const history = useOrderHistory(orders);
-  return <SafeAreaView style={ui.screen}>
+  return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
+    <Stack.Screen options={headerOptions('Your orders', 'Back from orders', () => backTo('/'))} />
     <FlatList data={history.data?.orders ?? []} keyExtractor={(order) => order.id} contentContainerStyle={ui.content}
       ListHeaderComponent={<View style={{ gap: 12 }}>
-        <Button label="← Home" variant="quiet" onPress={() => returnToShop()} />
-        <Text style={ui.label}>PLAZZA · SAVED ON THIS DEVICE</Text><Text accessibilityRole="header" style={ui.title}>Your orders</Text>
+        <Text style={ui.label}>PLAZZA · SAVED ON THIS DEVICE</Text>
         <Text style={ui.body}>Local demo orders, newest first. Payment and fulfillment are separate; no real delivery occurs.</Text>
         {history.data?.warning && <Text accessibilityRole="alert" style={ui.body}>{history.data.warning}</Text>}
         {unresolvedPayment(payment.attempt) && <Button label="Open saved payment attempt" variant="secondary" onPress={openPayment} />}

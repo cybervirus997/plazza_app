@@ -1,9 +1,12 @@
 import { router, type Href, type NativeStackNavigationOptions } from 'expo-router';
 import { Keyboard } from 'react-native';
-import { colors } from '../theme/tokens';
+import { colors, typography } from '../theme/tokens';
 
 export const stackOptions: NativeStackNavigationOptions = {
-  headerShown: false, animation: 'slide_from_right', animationTypeForReplace: 'push',
+  headerShown: true, animation: 'slide_from_right', animationTypeForReplace: 'push',
+  headerTitleAlign: 'left', headerTitleStyle: typography.heading,
+  headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.ink,
+  headerShadowVisible: false, headerTransparent: false,
   contentStyle: { backgroundColor: colors.background },
 };
 export const quietStackOptions: NativeStackNavigationOptions = { ...stackOptions, animation: 'none' };

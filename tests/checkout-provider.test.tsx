@@ -15,7 +15,7 @@ import { createAppReducer, initialAppState } from '../src/state/appReducer';
 import { orderInput, orderStorage, deferred, testOrder } from './order-fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
-jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), replace: jest.fn() }, useFocusEffect: (effect: () => (() => void) | void) => {
+jest.mock('expo-router', () => ({ Stack: { Screen: jest.requireActual('./native-header').MockStackScreen }, router: { navigate: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), replace: jest.fn() }, useFocusEffect: (effect: () => (() => void) | void) => {
   const React = jest.requireActual<typeof import('react')>('react');
   React.useEffect(effect, [effect]);
 } }));

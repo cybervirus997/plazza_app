@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
@@ -8,6 +8,7 @@ import { OrderItem } from './OrderItems';
 import { OrderIdentity, OrderReceiptFooter } from './OrderReceipt';
 import { useOrderById } from './useOrders';
 import { backTo, openPayment } from '../../navigation/commerceNavigation';
+import { headerContentEdges, headerOptions } from '../../navigation/headerOptions';
 
 export default function OrderDetailsScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -15,11 +16,11 @@ export default function OrderDetailsScreen() {
   const { orders, payment } = useShopping();
   const resource = useOrderById(orders, id);
   const order = resource.data;
-  return <SafeAreaView style={ui.screen}>
+  return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
+    <Stack.Screen options={headerOptions('Order receipt', 'Back from receipt', () => backTo('/orders'))} />
     <FlatList data={order?.items ?? []} keyExtractor={(item) => item.productId} contentContainerStyle={ui.content}
       ListHeaderComponent={<View style={{ gap: 14 }}>
-        <Button label="← Back" accessibilityLabel="Back from receipt" variant="quiet" onPress={() => backTo('/orders')} />
-        <Text style={ui.label}>PURCHASE-TIME SNAPSHOT</Text><Text accessibilityRole="header" style={ui.title}>Order receipt</Text>
+        <Text style={ui.label}>PURCHASE-TIME SNAPSHOT</Text>
         {order && <OrderIdentity order={order} reconciling={payment.attempt?.order.id === order.id && !payment.attempt.finalized} />}
         {order && payment.attempt?.order.id === order.id && !payment.attempt.finalized && <>
           <Text accessibilityRole="alert" style={ui.body}>This receipt is saved, but checkout reconciliation must finish before order confirmation.</Text>

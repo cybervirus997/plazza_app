@@ -27,6 +27,7 @@ let mockParams: { id?: string } = {};
 let mockNavigate: (href: Href) => void = () => {};
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
 jest.mock('expo-router', () => ({
+  Stack: { Screen: jest.requireActual('./native-header').MockStackScreen },
   router: { dismissTo: jest.fn((href: Href) => mockNavigate(href)), push: jest.fn((href: Href) => mockNavigate(href)), replace: jest.fn((href: Href) => mockNavigate(href)), navigate: jest.fn((href: Href) => mockNavigate(href)),
     canGoBack: () => true, back: jest.fn(() => mockNavigate('/cart')) },
   useLocalSearchParams: () => mockParams,
@@ -40,7 +41,10 @@ jest.mock('react-native/Libraries/Components/Keyboard/KeyboardAvoidingView', () 
   return { __esModule: true, default: (props: { children: ReactNode }) => React.createElement('KeyboardAvoidingView', props, props.children) };
 });
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
-jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: { children: ReactNode }) => children }));
+jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: (props: { children: ReactNode }) => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return React.createElement('SafeAreaView', props, props.children);
+} }));
 jest.mock('../src/features/permissions/PermissionPanel', () => ({ DeliveryLocation: () => null, PermissionPanel: () => null }));
 jest.mock('react-native/Libraries/Components/Pressable/Pressable', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -91,6 +95,27 @@ async function startSuccess(screen: Awaited<ReturnType<typeof mount>>) {
 }
 beforeEach(() => { jest.clearAllMocks(); jest.spyOn(Alert, 'alert').mockImplementation(() => {}); });
 afterEach(() => { jest.restoreAllMocks(); });
+
+test.each([
+  ['/checkout', 'Checkout', 'Back from Checkout'],
+  ['/payment', 'Simulated payment', 'Back from Simulated payment'],
+  ['/order-confirmation', 'Order confirmation', 'Back from Order confirmation'],
+  ['/orders', 'Your orders', 'Back from orders'],
+  ['/orders/[id]', 'Order receipt', 'Back from receipt'],
+  ['/addresses', 'Your address book', 'Back from address book'],
+])('%s exposes one native header and leaves the top safe area to the stack', async (route, title, backLabel) => {
+  const screen = await mount(paymentSetup(), route);
+  try {
+    const headers = screen.root.container.queryAll((node) => node.props.testID === 'native-stack-header');
+    expect(headers).toHaveLength(1);
+    expect(content(headers[0])).toBe(title);
+    expect(screen.root.container.queryAll((node) => node.props.accessibilityLabel === backLabel, { matchDeepestOnly: true })).toHaveLength(1);
+    const safeArea = screen.root.container.queryAll((node) => node.type === 'SafeAreaView')[0];
+    expect(safeArea.props.edges).toEqual(['left', 'right', 'bottom']);
+    expect(screen.root.container.queryAll((node) => node.props.accessibilityRole === 'header' && content(node) === title,
+      { matchDeepestOnly: true })).toHaveLength(1);
+  } finally { await screen.unmount(); }
+});
 
 test('Cart opens Checkout without clearing or placing anything; Back retains the editable cart', async () => {
   const screen = await mount(paymentSetup(), '/cart');
