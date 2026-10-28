@@ -1,32 +1,27 @@
-import { NativeTabs } from 'expo-router/native-tabs';
-import { useColorScheme } from 'react-native';
-
-import { Colors } from '@/constants/theme';
+import { Tabs } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useShopping } from '../state/AppStateProvider';
+import { colors } from '../theme/tokens';
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { itemCount } = useShopping();
 
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <Tabs screenOptions={{
+      headerShown: false,
+      tabBarActiveTintColor: colors.primary,
+      tabBarInactiveTintColor: colors.muted,
+      tabBarHideOnKeyboard: true,
+      tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+      tabBarItemStyle: { paddingVertical: 6 },
+      tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+      tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.white },
+    }}>
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color }) =>
+        <SymbolView name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={24} /> }} />
+      <Tabs.Screen name="cart" options={{ title: 'Cart', tabBarBadge: itemCount || undefined,
+        tabBarAccessibilityLabel: `Cart, ${itemCount} items`, tabBarIcon: ({ color }) =>
+          <SymbolView name={{ ios: 'bag', android: 'shopping_bag', web: 'shopping_bag' }} tintColor={color} size={24} /> }} />
+    </Tabs>
   );
 }
