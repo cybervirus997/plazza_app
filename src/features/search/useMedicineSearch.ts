@@ -7,7 +7,7 @@ type SearchState =
   | { status: 'results'; results: readonly Medicine[] }
   | { status: 'error'; results: readonly Medicine[]; message: string };
 
-export function useMedicineSearch() {
+export function useMedicineSearch(searchProducts: typeof searchCatalog = searchCatalog) {
   const [query, setQuery] = useState('');
   const [revision, setRevision] = useState(0);
   const requestId = useRef(0);
@@ -19,14 +19,14 @@ export function useMedicineSearch() {
     const id = requestId.current;
     // One short debounce for local search; commits reuse already loaded results.
     const timer = setTimeout(() => {
-      void searchCatalog(query).then((results) => {
+      void searchProducts(query).then((results) => {
         if (current && id === requestId.current) setSearch({ status: 'results', results });
       }).catch(() => {
-        if (current && id === requestId.current) setSearch({ status: 'error', results: [], message: 'We could not search the medicine catalog. Please try again.' });
+        if (current && id === requestId.current) setSearch({ status: 'error', results: [], message: 'We could not search the product catalog. Please try again.' });
       });
     }, 150);
     return () => { current = false; clearTimeout(timer); };
-  }, [query, revision]);
+  }, [query, revision, searchProducts]);
 
   function updateQuery(value: string) {
     requestId.current += 1;

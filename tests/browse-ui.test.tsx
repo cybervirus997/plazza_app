@@ -6,7 +6,7 @@ import BrowseScreen from '../src/features/search/BrowseScreen';
 import { catalogData } from '../src/data/catalog';
 import { AppStateProvider } from '../src/state/AppStateProvider';
 
-const mockParams: { query?: string } = {};
+const mockParams: { query?: string; categoryId?: string } = {};
 const mockCanGoBack = jest.fn(() => true);
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -49,6 +49,7 @@ function invoke(node: TestInstance, property: 'onPress' | 'onChangeText', value?
 
 beforeEach(() => {
   delete mockParams.query;
+  delete mockParams.categoryId;
   jest.clearAllMocks();
   mockCanGoBack.mockReturnValue(true);
 });
@@ -57,7 +58,7 @@ test('Browse renders the whole catalog without typing and supports Add with maxQ
   const root = createRoot();
   try {
     await act(async () => { root.render(<AppStateProvider><BrowseScreen /></AppStateProvider>); });
-    expect(textContent(root.container)).toContain('15 medicines available');
+    expect(textContent(root.container)).toContain('57 products in the demo catalog');
     // FlatList virtualizes the initial window; filtering makes each entry visible.
     const filter = labelled(root, 'Filter medicines by name or salt')[0];
     for (const medicine of catalogData.medicines) {
@@ -89,9 +90,9 @@ test('Browse filters a routed query by name or salt and clearing restores every 
     expect(labelled(root, 'Add Calpol 500 to cart')).toHaveLength(1);
     expect(labelled(root, 'Add Azithral 500 to cart')).toHaveLength(0);
     await act(async () => { invoke(filter, 'onChangeText', 'no-such-medicine'); });
-    expect(textContent(root.container)).toContain('No medicines found');
+    expect(textContent(root.container)).toContain('No products found');
     await act(async () => { invoke(labelled(root, 'Clear medicine filter')[0], 'onPress'); });
-    expect(textContent(root.container)).toContain('15 medicines available');
+    expect(textContent(root.container)).toContain('57 products in the demo catalog');
     await act(async () => { invoke(labelled(root, 'Back to Home')[0], 'onPress'); });
     expect(mockBack).toHaveBeenCalledTimes(1);
   } finally { await act(async () => { root.unmount(); }); }
@@ -121,4 +122,34 @@ test('Browse reports catalog failure and keeps the Home escape available', async
     await act(async () => { root.unmount(); });
     jest.restoreAllMocks();
   }
+});
+
+test('a routed category filters the shared catalog and retains the category during search and clear', async () => {
+  mockParams.categoryId = 'baby-care';
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AppStateProvider><BrowseScreen /></AppStateProvider>); });
+    expect(textContent(root.container)).toContain('6 of 57 products match');
+    expect(labelled(root, 'Add Baby wipes to cart')).toHaveLength(1);
+    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(0);
+    await act(async () => { invoke(labelled(root, 'Filter medicines by name or salt')[0], 'onChangeText', 'wash'); });
+    expect(textContent(root.container)).toContain('1 of 57 products match');
+    expect(labelled(root, 'Add Baby wash to cart')).toHaveLength(1);
+    expect(labelled(root, 'Add Hand wash to cart')).toHaveLength(0);
+    await act(async () => { invoke(labelled(root, 'Clear medicine filter')[0], 'onPress'); });
+    expect(textContent(root.container)).toContain('6 of 57 products match');
+    await act(async () => { invoke(labelled(root, 'Show all categories')[0], 'onPress'); });
+    expect(mockReplace).toHaveBeenCalledWith('/browse');
+  } finally { await act(async () => { root.unmount(); }); }
+});
+
+test('unknown category links show an empty state with a path back to the complete catalog', async () => {
+  mockParams.categoryId = 'unknown';
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AppStateProvider><BrowseScreen /></AppStateProvider>); });
+    expect(textContent(root.container)).toContain('Unknown category');
+    expect(textContent(root.container)).toContain('No products found');
+    expect(labelled(root, 'Show all categories')).toHaveLength(1);
+  } finally { await act(async () => { root.unmount(); }); }
 });

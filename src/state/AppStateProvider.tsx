@@ -1,21 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from 'react';
 
-import { catalogData } from '../data/catalog';
 import { calculateBill, type Bill } from '../domain/bill';
 import { cartCount, getCartItems } from '../domain/cart';
-import type { Medicine } from '../domain/types';
+import { emptyShoppingState } from '../domain/types';
+import type { Product } from '../features/catalog/products';
+import type { CatalogRepository } from '../repositories/CatalogRepository';
+import { localCatalogRepository } from '../repositories/local/LocalCatalogRepository';
 import { createSnapshotStore } from '../storage/persistence';
 import { createAppReducer, initialAppState, type AppAction, type AppState } from './appReducer';
 import { announceNotice } from './notifications';
 
 const store = createSnapshotStore(AsyncStorage);
-const reducer = createAppReducer(catalogData.medicines);
 
 interface ShoppingContext {
   state: AppState;
   dispatch: Dispatch<AppAction>;
-  catalog: readonly Medicine[];
+  catalog: readonly Product[];
+  catalogStatus: 'loading' | 'ready' | 'error';
+  catalogError: string | null;
+  repository: CatalogRepository;
   items: ReturnType<typeof getCartItems>;
   itemCount: number;
   bill: Bill;
@@ -24,7 +28,11 @@ interface ShoppingContext {
 
 const Context = createContext<ShoppingContext | null>(null);
 
-export function AppStateProvider({ children }: PropsWithChildren) {
+export function AppStateProvider({ children, repository = localCatalogRepository }: PropsWithChildren<{ repository?: CatalogRepository }>) {
+  const [catalog, setCatalog] = useState<readonly Product[]>([]);
+  const [catalogStatus, setCatalogStatus] = useState<ShoppingContext['catalogStatus']>('loading');
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const reducer = useMemo(() => createAppReducer(catalog), [catalog]);
   const [state, dispatch] = useReducer(reducer, undefined, initialAppState);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
   const announcedId = useRef(0);
@@ -36,15 +44,26 @@ export function AppStateProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void store.restore(catalogData.medicines).then((restored) => {
-      if (active) dispatch({ type: 'hydrate', ...restored });
+    void repository.load().then(async (products) => {
+      if (!active) return;
+      setCatalog(products);
+      const restored = await store.restore(products);
+      if (active) {
+        setCatalogStatus('ready');
+        dispatch({ type: 'hydrate', ...restored });
+      }
+    }).catch((error: unknown) => {
+      if (!active) return;
+      setCatalogError(error instanceof Error ? error.message : 'The product catalog could not be loaded.');
+      setCatalogStatus('error');
+      dispatch({ type: 'hydrate', snapshot: emptyShoppingState() });
     });
     return () => { active = false; };
-  }, []);
+  }, [repository]);
 
   useEffect(() => {
     // Missing production data must never wipe a previously saved cart.
-    if (!state.hydrated || catalogData.error) return;
+    if (!state.hydrated || catalogStatus !== 'ready') return;
     let active = true;
     const sequence = ++writeSequence.current;
     void store.save(snapshot).then((saved) => {
@@ -53,7 +72,7 @@ export function AppStateProvider({ children }: PropsWithChildren) {
       }
     });
     return () => { active = false; };
-  }, [snapshot, state.hydrated]);
+  }, [snapshot, state.hydrated, catalogStatus]);
 
   useEffect(() => {
     if (state.notice && state.notice.id > announcedId.current) {
@@ -63,12 +82,12 @@ export function AppStateProvider({ children }: PropsWithChildren) {
   }, [state.notice]);
 
   const value = useMemo<ShoppingContext>(() => ({
-    state, dispatch, catalog: catalogData.medicines,
-    items: getCartItems(state.cart, catalogData.medicines),
+    state, dispatch, catalog, catalogStatus, catalogError, repository,
+    items: getCartItems(state.cart, catalog),
     itemCount: cartCount(state.cart),
-    bill: calculateBill(state.cart, catalogData.medicines, state.activeCouponCode, state.usedCouponCodes),
+    bill: calculateBill(state.cart, catalog, state.activeCouponCode, state.usedCouponCodes),
     persistenceError,
-  }), [state, persistenceError]);
+  }), [state, persistenceError, catalog, catalogStatus, catalogError, repository]);
 
   return <Context value={value}>{children}</Context>;
 }

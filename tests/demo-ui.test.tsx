@@ -8,6 +8,8 @@ import BrowseScreen from '../src/features/search/BrowseScreen';
 import { catalogData } from '../src/data/catalog';
 import { decodeSnapshot } from '../src/storage/persistence';
 import { AppStateProvider } from '../src/state/AppStateProvider';
+import type { CatalogRepository } from '../src/repositories/CatalogRepository';
+import { localCatalogRepository } from '../src/repositories/local/LocalCatalogRepository';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -96,8 +98,8 @@ test('Home previews real medicines without typing and opens Browse without recor
   const root = createRoot();
   try {
     await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
-    expect(textContent(root.container)).toContain('15 medicines in the catalog');
-    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(1);
+    expect(textContent(root.container)).toContain('57 products · 15 medicines + 42 demo essentials');
+    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(2);
     expect(labelled(root, 'Add Azithral 500 to cart')).toHaveLength(1);
     expect(textContent(root.container)).toContain('Rx · Prescription required');
     await act(async () => { invoke(labelled(root, 'Browse all medicines')[0], 'onPress'); });
@@ -176,10 +178,10 @@ test('a no-match query has a helpful state and clearing restores the catalog pre
     await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
     await act(async () => { invoke(labelled(root, 'Search medicines by name or salt')[0], 'onChangeText', 'no-such-medicine'); });
     await act(async () => { await jest.advanceTimersByTimeAsync(150); });
-    expect(textContent(root.container)).toContain('No medicines found');
+    expect(textContent(root.container)).toContain('No products found');
     expect(labelled(root, 'View all matching medicines')).toHaveLength(0);
     await act(async () => { invoke(labelled(root, 'Clear search')[0], 'onPress'); });
-    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(1);
+    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(2);
   } finally {
     await act(async () => { root.unmount(); });
     jest.useRealTimers();
@@ -192,11 +194,11 @@ test('Home, Browse, and Cart share preview additions and quantity updates', asyn
     await act(async () => {
       root.render(<AppStateProvider><HomeScreen /><BrowseScreen /><CartScreen /></AppStateProvider>);
     });
-    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(2);
+    expect(labelled(root, 'Add Dolo 650 to cart')).toHaveLength(3);
     await act(async () => { invoke(labelled(root, 'Add Dolo 650 to cart')[0], 'onPress'); });
-    expect(labelled(root, 'Dolo 650, quantity 1')).toHaveLength(3);
+    expect(labelled(root, 'Dolo 650, quantity 1')).toHaveLength(4);
     await act(async () => { invoke(labelled(root, 'Increase Dolo 650 quantity')[1], 'onPress'); });
-    expect(labelled(root, 'Dolo 650, quantity 2')).toHaveLength(3);
+    expect(labelled(root, 'Dolo 650, quantity 2')).toHaveLength(4);
   } finally { await act(async () => { root.unmount(); }); }
 });
 
@@ -215,4 +217,64 @@ test('Home reports catalog failure instead of silently showing an empty discover
     await act(async () => { root.unmount(); });
     jest.restoreAllMocks();
   }
+});
+
+test('Home category and banner CTAs open the configured category without committing searches', async () => {
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AppStateProvider><HomeScreen /></AppStateProvider>); });
+    await act(async () => { invoke(labelled(root, 'Browse Baby care')[0], 'onPress'); });
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'baby-care' } });
+    await act(async () => { invoke(labelled(root, 'Explore daily wellness')[0], 'onPress'); });
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/browse', params: { categoryId: 'daily-wellness' } });
+    expect(recentSearches()).toEqual([]);
+  } finally { await act(async () => { root.unmount(); }); }
+});
+
+test('demo products are searchable and cartable through the same shared cart with quantity limits', async () => {
+  jest.useFakeTimers();
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AppStateProvider><HomeScreen /><CartScreen /></AppStateProvider>); });
+    await act(async () => { invoke(labelled(root, 'Search medicines by name or salt')[0], 'onChangeText', 'baby wipes'); });
+    await act(async () => { await jest.advanceTimersByTimeAsync(150); });
+    expect(textContent(root.container)).toContain('Demo item');
+    await act(async () => { invoke(labelled(root, 'Add Baby wipes to cart')[0], 'onPress'); });
+    expect(labelled(root, 'Baby wipes, quantity 1')).toHaveLength(2);
+    for (let i = 0; i < 4; i++) {
+      await act(async () => { invoke(labelled(root, 'Increase Baby wipes quantity')[0], 'onPress'); });
+    }
+    expect(labelled(root, 'Baby wipes, quantity 5')).toHaveLength(2);
+    expect(labelled(root, 'Increase Baby wipes quantity')[0].props.accessibilityState).toMatchObject({ disabled: true });
+    expect(textContent(root.container)).toContain('₹600');
+  } finally {
+    await act(async () => { root.unmount(); });
+    jest.useRealTimers();
+  }
+});
+
+test('Home exposes loading before an injected repository resolves and does not overwrite storage while loading', async () => {
+  let resolve: (products: Awaited<ReturnType<CatalogRepository['load']>>) => void = () => {};
+  const repository: CatalogRepository = {
+    load: () => new Promise((done) => { resolve = done; }), search: localCatalogRepository.search,
+  };
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AppStateProvider repository={repository}><HomeScreen /></AppStateProvider>); });
+    expect(labelled(root, 'Loading catalog')).toHaveLength(1);
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+    await act(async () => { resolve(await localCatalogRepository.load()); });
+    expect(textContent(root.container)).toContain('57 products');
+    expect(labelled(root, 'Loading catalog')).toHaveLength(0);
+  } finally { await act(async () => { root.unmount(); }); }
+});
+
+test('an empty repository result has a useful empty state instead of empty configured shelves', async () => {
+  const repository: CatalogRepository = { load: async () => [], search: async () => [] };
+  const root = createRoot();
+  try {
+    await act(async () => { root.render(<AppStateProvider repository={repository}><HomeScreen /></AppStateProvider>); });
+    expect(textContent(root.container)).toContain('No products found');
+    expect(labelled(root, 'See all Daily wellness')).toHaveLength(0);
+  } finally { await act(async () => { root.unmount(); }); }
 });

@@ -4,6 +4,7 @@ import { useShopping } from '../state/AppStateProvider';
 import { colors, formatMoney, ui } from '../theme/tokens';
 import { Button } from './ui/Button';
 import { QuantityControl } from './ui/QuantityControl';
+import { ProductImage } from './ProductImage';
 
 interface Props {
   medicine: Medicine;
@@ -13,12 +14,14 @@ interface Props {
 }
 
 export function MedicineCard({ medicine, quantity, inCart = false, onSelect }: Props) {
-  const { dispatch } = useShopping();
+  const { dispatch, catalog } = useShopping();
+  const product = catalog.find((item) => item.id === medicine.id);
   const details = <>
-      <View style={styles.icon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={styles.cross}>+</Text></View>
+      <ProductImage imageKey={product?.imageKey} />
       <View style={ui.flex}>
         <Text style={styles.name}>{medicine.name}</Text>
         <Text style={ui.small}>{medicine.salt}</Text>
+        {product?.isDemo && <Text style={styles.demo}>Demo item</Text>}
         {medicine.rx && <View style={styles.rx}><Text style={styles.rxText}>Rx · Prescription required</Text></View>}
       </View>
     </>;
@@ -38,8 +41,7 @@ export function MedicineCard({ medicine, quantity, inCart = false, onSelect }: P
 }
 
 const styles = StyleSheet.create({
-  icon: { width: 48, height: 52, borderRadius: 14, backgroundColor: colors.primarySoft, justifyContent: 'center', alignItems: 'center' },
-  cross: { color: colors.primary, fontSize: 32, fontWeight: '400' },
+  demo: { color: colors.primary, fontSize: 11, fontWeight: '600', marginTop: 4 },
   name: { color: colors.ink, fontSize: 16, lineHeight: 23, fontWeight: '600' },
   rx: { alignSelf: 'flex-start', backgroundColor: colors.amberSoft, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, marginTop: 6 },
   rxText: { fontSize: 12, lineHeight: 18, fontWeight: '600', color: colors.amber },
