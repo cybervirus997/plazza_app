@@ -3,7 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { useShopping } from '../../state/AppStateProvider';
 import { colors, ui } from '../../theme/tokens';
-import { OrderIdentity } from './OrderReceipt';
+import { OrderHistoryCard } from './OrderHistoryCard';
+import { unresolvedPayment } from '../../domain/payments';
 import { useOrderHistory } from './useOrders';
 import { openPayment, openReceipt, returnToShop } from '../../navigation/commerceNavigation';
 
@@ -17,12 +18,9 @@ export default function OrderHistoryScreen() {
         <Text style={ui.label}>PLAZZA · SAVED ON THIS DEVICE</Text><Text accessibilityRole="header" style={ui.title}>Your orders</Text>
         <Text style={ui.body}>Local demo orders, newest first. Payment and fulfillment are separate; no real delivery occurs.</Text>
         {history.data?.warning && <Text accessibilityRole="alert" style={ui.body}>{history.data.warning}</Text>}
-        {payment.attempt && !payment.attempt.finalized && <Button label="Open saved payment attempt" variant="secondary" onPress={openPayment} />}
+        {unresolvedPayment(payment.attempt) && <Button label="Open saved payment attempt" variant="secondary" onPress={openPayment} />}
       </View>}
-      renderItem={({ item }) => <View style={{ gap: 8 }}>
-        <OrderIdentity order={item} reconciling={payment.attempt?.order.id === item.id && !payment.attempt.finalized} />
-        <Button label="View receipt" accessibilityLabel={`View order ${item.id}`} onPress={() => openReceipt(item.id)} />
-      </View>}
+      renderItem={({ item }) => <OrderHistoryCard order={item} reconciling={payment.attempt?.order.id === item.id && !payment.attempt.finalized} onOpen={openReceipt} />}
       ListEmptyComponent={<View style={ui.card}>
         {history.status === 'loading' ? <><ActivityIndicator accessibilityLabel="Loading saved orders" color={colors.primary} /><Text style={ui.body}>Loading your saved orders…</Text></>
           : history.error ? <><Text accessibilityRole="alert" style={ui.body}>{history.error}</Text><Button label="Retry orders" onPress={history.retry} /></>

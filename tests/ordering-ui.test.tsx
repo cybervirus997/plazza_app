@@ -189,7 +189,7 @@ test.each(['failure', 'cancel'] as const)('UI outcome %s keeps cart intact and d
     expect(screen.read().shopping.state.usedCouponCodes).toEqual([]);
     expect(screen.route()).toBe('/payment');
     expect(screen.text()).toContain('No order was placed');
-    await screen.tap('Review & start a new attempt'); await startSuccess(screen); await screen.tap('Pay ₹400 · simulated UPI');
+    await screen.tap(outcome === 'failure' ? 'Retry Payment' : 'Back to Checkout'); await startSuccess(screen); await screen.tap('Pay ₹400 · simulated UPI');
     expect(screen.read().shopping.payment.attempt?.id).toBe('payment-2');
     expect((await screen.app.service.orders.load()).orders).toHaveLength(1);
   } finally { await screen.unmount(); }
@@ -200,7 +200,7 @@ test('explicit cancellation and mock COD confirmation are separate deliberate ac
     await screen.tap('Continue to simulated payment →'); await screen.tap('Cancel simulated payment');
     expect(screen.read().shopping.payment.attempt?.status).toBe('cancelled');
     expect(screen.read().shopping.state.usedCouponCodes).toEqual([]);
-    await screen.tap('Review & start a new attempt'); await screen.tap('Mock Cash on Delivery');
+    await screen.tap('Back to Checkout'); await screen.tap('Mock Cash on Delivery');
     await screen.tap('Continue to simulated payment →');
     expect((await screen.app.service.orders.load()).orders).toHaveLength(0);
     await screen.tap('Confirm mock COD order');
@@ -351,5 +351,58 @@ test('Android Cart relies on native resize without a second keyboard height adju
     expect(avoidance).toHaveLength(1);
     expect(avoidance[0].props.enabled).toBe(false);
     expect(avoidance[0].props.behavior).toBeUndefined();
+  } finally { await screen.unmount(); }
+});
+
+test('a failed payment offers an explicit Change Method review before a new COD confirmation', async () => {
+  const screen = await mount();
+  try {
+    await screen.tap('failure'); await screen.tap('Continue to simulated payment →'); await screen.tap('Pay ₹400 · simulated UPI');
+    expect(labelled(screen.root, 'Payment failed status').props.accessibilityLiveRegion).toBe('polite');
+    expect(screen.text()).toContain('The payment simulation failed');
+    await screen.tap('Change Method');
+    expect(screen.route()).toBe('/checkout');
+    await screen.tap('Mock Cash on Delivery'); await screen.tap('Continue to simulated payment →');
+    expect((await screen.app.service.orders.load()).orders).toHaveLength(0);
+    await screen.tap('Confirm mock COD order');
+    expect(screen.read().shopping.payment.attempt?.id).toBe('payment-2');
+    expect(screen.route()).toBe('/order-confirmation');
+    expect((await screen.app.service.orders.load()).orders).toHaveLength(1);
+  } finally { await screen.unmount(); }
+});
+test('history and receipt distinguish persisted fulfillment from unfinished checkout reconciliation', async () => {
+  const screen = await mount(); let failed = false;
+  jest.mocked(screen.app.port.setItem).mockImplementation(async (key, value) => {
+    if (key === STORAGE_KEY && value.includes('lastFinalizedCheckoutId') && !failed) { failed = true; throw new Error('finalization failed'); }
+    screen.app.data.set(key, value);
+  });
+  try {
+    await startSuccess(screen); await screen.tap('Pay ₹400 · simulated UPI');
+    expect(labelled(screen.root, 'Order reconciliation required status').props.accessibilityLiveRegion).toBe('polite');
+    await screen.go('/orders');
+    expect(screen.text()).toContain('Placed');
+    expect(screen.text()).toContain('2 products · 3 items');
+    expect(screen.text()).toContain('Test Relief · Test Care');
+    expect(screen.text()).toContain('Checkout reconciliation pending');
+    expect(screen.text()).not.toContain('Order status: reconciliation pending');
+    await screen.tap('View order order-1');
+    expect(screen.text()).toContain('Receipt saved · checkout is not yet finalized');
+    expect(screen.text()).toContain('Grand Total₹400');
+    expect(screen.text()).toContain('Simulated UPI · succeeded, no money transferred');
+    expect(screen.text()).not.toContain('Your mock order is saved');
+  } finally { await screen.unmount(); }
+});
+
+test('Checkout choices expose selected state and stable accessible names', async () => {
+  const screen = await mount();
+  try {
+    expect(labelled(screen.root, 'Simulated UPI').props.accessibilityState.selected).toBe(true);
+    expect(labelled(screen.root, 'Mock Cash on Delivery').props.accessibilityState.selected).toBe(false);
+    await screen.tap('Mock Cash on Delivery');
+    expect(labelled(screen.root, 'Mock Cash on Delivery').props.accessibilityState.selected).toBe(true);
+    expect(labelled(screen.root, 'Simulated UPI').props.accessibilityState.selected).toBe(false);
+    await screen.tap('Scheduled · evening demo window');
+    expect(labelled(screen.root, 'Scheduled · evening demo window').props.accessibilityState.selected).toBe(true);
+    expect(labelled(screen.root, 'ASAP · demo preference').props.accessibilityState.selected).toBe(false);
   } finally { await screen.unmount(); }
 });

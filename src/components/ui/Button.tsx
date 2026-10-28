@@ -5,14 +5,15 @@ interface Props {
   label: string;
   onPress(): void;
   disabled?: boolean;
+  selected?: boolean;
   variant?: 'primary' | 'secondary' | 'quiet';
   accessibilityLabel?: string;
 }
 
-export function Button({ label, onPress, disabled = false, variant = 'primary', accessibilityLabel }: Props) {
+export function Button({ label, onPress, disabled = false, selected, variant = 'primary', accessibilityLabel }: Props) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
+      accessibilityState={{ disabled, ...(selected === undefined ? {} : { selected }) }} disabled={disabled} onPress={onPress}
       style={({ pressed }) => [styles.button, styles[variant], disabled && styles.disabled, pressed && styles.pressed]}>
       <Text style={[styles.text, variant === 'primary' ? styles.lightText : styles.darkText]}>{label}</Text>
     </Pressable>

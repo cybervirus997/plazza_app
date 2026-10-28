@@ -72,8 +72,8 @@ export default function CheckoutScreen() {
     <View style={ui.card}>
       <Text style={ui.heading}>Delivery preference · simulated</Text>
       <Text style={ui.small}>ASAP or a scheduled window is a saved preference, not a confirmed ETA or reservation.</Text>
-      <Button label={`${preference === 'asap' ? '✓ ' : ''}ASAP · demo preference`} variant="secondary" disabled={pending || payment.busy} onPress={() => update({ preference: 'asap' })} />
-      <Button label={`${preference === 'scheduled' ? '✓ ' : ''}Scheduled · evening demo window`} variant="secondary" disabled={pending || payment.busy} onPress={() => update({ preference: 'scheduled' })} />
+      <Button accessibilityLabel="ASAP · demo preference" selected={preference === 'asap'} label={`${preference === 'asap' ? '✓ ' : ''}ASAP · demo preference`} variant="secondary" disabled={pending || payment.busy} onPress={() => update({ preference: 'asap' })} />
+      <Button accessibilityLabel="Scheduled · evening demo window" selected={preference === 'scheduled'} label={`${preference === 'scheduled' ? '✓ ' : ''}Scheduled · evening demo window`} variant="secondary" disabled={pending || payment.busy} onPress={() => update({ preference: 'scheduled' })} />
     </View>
     {review && <>
       <View style={ui.between}><Text style={ui.heading}>Items in your order</Text><Button label="Edit Cart" variant="quiet" disabled={payment.busy} onPress={() => returnToShop('cart')} /></View>
@@ -83,14 +83,14 @@ export default function CheckoutScreen() {
     </>}
     <View style={ui.card}>
       <Text style={ui.heading}>Choose a simulated payment method</Text>
-      <Button accessibilityLabel="Simulated UPI" label={`${method === 'upi' ? '✓ ' : ''}Simulated UPI`} variant="secondary" disabled={pending || payment.busy} onPress={() => update({ method: 'upi' })} />
-      <Button accessibilityLabel="Mock Cash on Delivery" label={`${method === 'cod' ? '✓ ' : ''}Mock Cash on Delivery`} variant="secondary" disabled={pending || payment.busy || !review || !allowsDemoCod(review)} onPress={() => update({ method: 'cod' })} />
+      <Button accessibilityLabel="Simulated UPI" selected={method === 'upi'} label={`${method === 'upi' ? '✓ ' : ''}Simulated UPI`} variant="secondary" disabled={pending || payment.busy} onPress={() => update({ method: 'upi' })} />
+      <Button accessibilityLabel="Mock Cash on Delivery" selected={method === 'cod'} label={`${method === 'cod' ? '✓ ' : ''}Mock Cash on Delivery`} variant="secondary" disabled={pending || payment.busy || !review || !allowsDemoCod(review)} onPress={() => update({ method: 'cod' })} />
       <Text style={ui.small}>Demo COD is available for totals up to ₹2,000. No cash collection or fulfillment occurs.</Text>
     </View>
     {__DEV__ && method === 'upi' && <View style={ui.card}>
       <Text style={ui.heading}>Developer simulation outcome</Text>
       <Text style={ui.small}>This control exercises the local simulator. No bank or UPI app is contacted.</Text>
-      {paymentScenarios.map((outcome) => <Button key={outcome} accessibilityLabel={outcome} label={`${scenario === outcome ? '✓ ' : ''}${outcome}`} variant="quiet"
+      {paymentScenarios.map((outcome) => <Button key={outcome} accessibilityLabel={outcome} selected={scenario === outcome} label={`${scenario === outcome ? '✓ ' : ''}${outcome}`} variant="quiet"
         disabled={pending || payment.busy} onPress={() => update({ scenario: outcome })} />)}
     </View>}
   </OrderPage>;

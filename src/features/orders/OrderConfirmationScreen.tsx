@@ -1,7 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Text } from 'react-native';
 import { Button } from '../../components/ui/Button';
 import { useShopping } from '../../state/AppStateProvider';
+import { StatusPanel } from '../../components/ui/StatusPanel';
+import { confirmedPresentation, receiptPaymentLabel } from './statusPresentation';
 import { colors, ui } from '../../theme/tokens';
 import { AddressSummary } from './AddressSummary';
 import { OrderIdentity } from './OrderReceipt';
@@ -26,9 +28,9 @@ export default function OrderConfirmationScreen() {
             <Button label="Open payment recovery" onPress={openPayment} />
             <Button label="View saved receipt" variant="secondary" onPress={() => openReceipt(order.id)} />
           </> : <>
-            <View style={ui.card}><Text style={ui.heading}>✓ Your mock order is saved</Text><Text style={ui.body}>Checkout is durably finalized on this device. No real payment or delivery occurred.</Text></View>
+            <StatusPanel presentation={confirmedPresentation} />
             <OrderIdentity order={order} />
-            <Text style={ui.body}>{order.payment ? order.payment.method === 'cod' ? 'Mock COD · confirmed, no cash collected' : 'Simulated UPI · succeeded, no money transferred' : 'Legacy demo · payment metadata not recorded'}</Text>
+            <Text style={ui.body}>{receiptPaymentLabel(order)}</Text>
             {order.items.some((item) => item.rx) && <Text style={ui.body}>Prescription review required. No prescription was verified or approved.</Text>}
             <AddressSummary snapshot={order.deliveryAddress} />
             <Button label="View Order" onPress={() => openReceipt(order.id)} />
