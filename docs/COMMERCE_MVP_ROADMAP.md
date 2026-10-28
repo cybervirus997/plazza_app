@@ -1,12 +1,12 @@
 # Plazza Commerce MVP — Post-Submission Roadmap
 
-Status: **Design proposal / implementation plan**, not a claim that these features are built.
+Status: **Implemented slices plus future proposals**. Only the completed features explicitly listed below are built.
 Branch: `feat/plazza-commerce-mvp` (created from submitted `master`).
 Keep `master` and existing take-home requirements, tests, routes, and business rules intact. Build incrementally and review generated code.
 
-Stage 1 catalog expansion and Commerce Home are implemented on the feature branch; see [implementation, validation and remaining limitations](COMMERCE_STAGE_1.md). The additional features below remain proposals.
+Stage 1 catalog expansion and Commerce Home are implemented on the feature branch; see [implementation, validation and remaining limitations](COMMERCE_STAGE_1.md). The remaining features below are proposals unless explicitly marked implemented.
 
-P0 permission hardening and the P1 [delivery address book](ADDRESS_BOOK.md) are also implemented. Orders will atomically persist an order with its immutable delivery-address snapshot before clearing the cart; this address slice only exposes the snapshot API and keeps mock checkout unchanged.
+P0 permission hardening and the P1 [delivery address book](ADDRESS_BOOK.md) are implemented. **P2 ordering is now implemented**: dedicated Checkout, durable deterministic simulated UPI/COD attempts, pending/retry/restart recovery, immutable receipts, durable confirmation and newest-first Order History from Home. Order and address are saved together before shopping finalization; separate storage keys use recoverable coordination, not a multi-key atomic transaction. See [architecture and guarantees](ORDERS_DESIGN.md) and the [Android checklist](ORDERS_ANDROID_CHECKLIST.md). Tracking, Plus, real payments/fulfillment, Profile, Share, offers/experiments and analytics remain unimplemented.
 
 ## Product objective
 
@@ -16,7 +16,7 @@ Everything except WhatsApp external sharing is simulated/local. No payments, rea
 
 ## Navigation & home screen
 
-Bottom tabs: **Home | Cart | Share**. The Share tab opens an in-app share screen with a WhatsApp deep link, system-share and copy-link fallbacks; no automatic external navigation on tab selection. Profile icon in Home header; Orders accessible from Profile and active-order banner. Keep existing Browse screen accessible.
+Current bottom tabs: **Home | Cart**, with an Orders action in Home. Proposed future tabs: **Home | Cart | Share**. The Share tab opens an in-app share screen with a WhatsApp deep link, system-share and copy-link fallbacks; no automatic external navigation on tab selection. Profile icon in Home header; Orders accessible from Profile and active-order banner. Keep existing Browse screen accessible.
 
 Home (single vertically scrolling list, horizontal strips nested only for categories/carousels):
 1. safe-area location, demo delivery promise/ETA and active-order status banner (not misleading live delivery claim);
@@ -38,7 +38,9 @@ Choose legitimately reusable/locally bundled or explicitly licensed imagery; do 
 
 ## Orders & delivery
 
-Add mock checkout, order history, detail/receipt, tracking and delivery-feedback screens.
+**Implemented P2:** Cart → Checkout → simulated Payment → durable Confirmation → immutable Receipt, plus Home → Order History → Receipt. Pending payment has explicit Check Status and restart recovery; failed/cancelled attempts preserve the cart and FIRST100. Manual saved addresses work without GPS. All stock/serviceability, ASAP/scheduled preferences and COD rules are labelled demo fixtures.
+
+**Future, not implemented:** tracking, simulated status progression/ETA, delivery feedback and help flows. The aggregate order fields/status model below describes that future extension; current version-1 receipts and optional payment metadata are documented in ORDERS_DESIGN.md.
 
 Order snapshot includes `id, placedAt, items (id/name/qty/unitPrice), itemTotal, couponDiscount, deliveryBeforeMembership, membershipDeliverySavings, deliveryFeePaid, grandTotal, plusAtCheckout, status, mockEta, deliveryEvents, feedback?`. Prices/discounts on past receipts MUST remain frozen even when catalog or membership changes.
 
@@ -110,14 +112,14 @@ Use a single overlay provider for drawers/sheets/modals; support Android back, f
    - Category filters correct; missing image fallback; search/cart work; tab bar sane with keyboard.
 3. **Plus + pricing + offers** — mock toggle, cart bill, savings, stable A/B assignments and debug override.
    - No double savings with FREEDEL, deterministic variant, tests for pricing boundaries.
-4. **Orders** — order snapshot, history, receipt, simulated ETA/status, feedback and help.
+4. **Orders** — checkout, simulated payment attempts, immutable snapshots, history and receipts **implemented**; simulated ETA/status progression, feedback and help **remain planned**.
    - Receipt survives restarts and changing prices, status transitions valid, feedback gated on delivered.
 5. **Analytics & UX polish** — event log, permission audit, developer viewer, overlays, keyboard/device testing.
    - Versioned bounded events, no PII, reproducible experiment assignments, Android back/keyboard.
 6. **Verification** — typecheck/lint/tests/CI; build a standalone preview APK; real-device smoke video.
    - No test suite regressions. All simulated features labelled as demo.
 
-## Critical demo checks
+## Future acceptance checks (include unimplemented stages)
 
 - Android 13+ permissions, Settings return flow, search name/salt, Rx badge and maxQty stay correct.
 - 15 original medicines unaffected; multi-category items display and search.
@@ -128,6 +130,6 @@ Use a single overlay provider for drawers/sheets/modals; support Android back, f
 - Offline, no images/permissions, slow Android keyboard open/close, Android back from overlay.
 - Open Developer Settings -> inspect variant assignment and a bounded, non-sensitive event log.
 
-## Suggested first Codex implementation boundary
+## Original first implementation boundary (completed)
 
-Only implement **Slice 1 and Slice 2** at first. Inspect/reuse existing code before changing anything. Keep all existing tests, write new tests for category filtering and home section config, run `npm run check`. Do not refactor coupon/bill or add a map SDK in this first slice. Commit incremental logical units; leave a short change summary and trade-offs in documentation.
+The original initial boundary was **Slice 1 and Slice 2**. Stage 1, P0, P1 and the P2 ordering slice are now implemented as stated above; this paragraph is retained as historical planning context. Inspect/reuse existing code before changing anything. Keep all existing tests, write new tests for category filtering and home section config, run `npm run check`. Do not refactor coupon/bill or add a map SDK in this first slice. Commit incremental logical units; leave a short change summary and trade-offs in documentation.
