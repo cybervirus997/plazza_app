@@ -1,6 +1,6 @@
-# P2A — Immutable mock-order foundation
+# Orders — P2A foundation and P2B-1 recoverable checkout
 
-Implemented on `feat/plazza-commerce-mvp`. P2A adds pure receipt creation and an injectable local repository. **The current Cart button/reducer still clears the cart and redeems the active one-time coupon immediately; it is unchanged and does not use this repository.** Durable checkout and history UI belong to P2B.
+Implemented on `feat/plazza-commerce-mvp`. P2A supplies immutable receipts and an injectable local order repository. P2B-1 now connects Cart to a recoverable asynchronous checkout. Cart clearing and FIRST100 redemption happen only after the shopping finalization write succeeds. Order History, Receipt UI and other roadmap features remain outside this slice.
 
 ## Schema and snapshot ownership
 
@@ -27,7 +27,7 @@ Every returned order, item array, item, address snapshot, address and coordinate
 ## Repository API and persistence
 
 - `src/repositories/OrderRepository.ts`: `version: 1`, `load()`, `getById(id)`, `create(order)` and shared conflict/recovery/version errors.
-- `src/repositories/local/LocalOrderRepository.ts`: `createLocalOrderRepository(storage: StoragePort)`. Pass the existing AsyncStorage-compatible port at the future composition boundary; P2A adds no provider, UI wiring, database or package.
+- `src/repositories/local/LocalOrderRepository.ts`: `createLocalOrderRepository(storage: StoragePort)`. The checkout coordinator receives the same AsyncStorage-compatible port as the existing shopping writer. No database or package was added.
 - Storage key: **`plazza.orders.v1`**. Envelope: `{ version: 1, orders: Order[] }`.
 - `load()` returns `{ orders, warning, canWrite }` in insertion order (oldest insertion first). `canWrite` describes schema/recovery readiness, not a guarantee that the next device write will succeed.
 - `getById()` returns a frozen order or null for a missing ID in a healthy history. It throws on unreadable/unsupported/damaged history, preventing an ambiguous lookup from being interpreted as authoritative absence.
@@ -37,7 +37,7 @@ Reads and writes are serialized, including across adapters sharing the **same po
 
 ### Idempotency and failure behavior
 
-An identical canonical receipt with an existing `checkoutId` returns the persisted order with `created: false`, without appending/reordering/writing. Any payload difference, including order ID or placement time, raises `OrderConflictError`. Reusing an order ID for a different checkout also conflicts. Persist the original full intent in P2B so retries do not generate fresh IDs/time or reprice the receipt.
+An identical canonical receipt with an existing `checkoutId` returns the persisted order with `created: false`, without appending/reordering/writing. Any payload difference, including order ID or placement time, raises `OrderConflictError`. Reusing an order ID for a different checkout also conflicts. The P2B-1 journal persists the original full intent so retries do not generate fresh IDs/time or reprice the receipt.
 
 If a write rejects, it may or may not have committed. The repository does not compensate by deleting or overwriting a receipt: retry the **same** intent. If the original write actually committed but its acknowledgement was lost, the retry finds that order and returns it once. A successful promise is a platform acknowledgement, not a guarantee against subsequent device/storage loss.
 
@@ -45,58 +45,84 @@ Only a missing key (`null`) is a healthy empty history. Invalid JSON/envelopes r
 
 Receipt/address data stays in local, unencrypted storage. No order payloads are logged or sent to analytics. A historical receipt owns its address copy even if the saved address is later edited/deleted. Retention/export/erasure policy and server identity are future concerns; no server/payment guarantees are claimed.
 
-## P2B reliability choice — immutable intent plus shopping checkpoint
+## P2B-1 — implemented recovery protocol
 
-AsyncStorage has no multi-key transactions. Saving `plazza.orders.v1` and then writing `plazza.shopping.v1` is **not atomic**, even when awaited or grouped in `multiSet`.
+AsyncStorage has no multi-key transactions. Saving `plazza.orders.v1` and then `plazza.shopping.v1` is **not atomic**, even when awaited or grouped in `multiSet`. This implementation uses a durable immutable intent and a shopping checkpoint, preserving the existing shopping key and writer rather than introducing a second cart store.
 
-| Option | Assessment |
+Journal key **`plazza.checkout.v1`** stores `{ version: 1, pending: { order: Order, oneTimeCouponCode: string | null } | null }`. The order contains the original IDs, timestamp, item prices/quantities, totals, coupon and versioned address snapshot. It is not an editable cart. Journal v1 validates the captured redemption obligation as FIRST100 for a FIRST100 receipt and null otherwise. Recovery never consults the current catalog, address book or promotion eligibility to rebuild this receipt.
+
+Shopping remains **`plazza.shopping.v1`** with optional `lastFinalizedCheckoutId`. Old complete v1 shopping snapshots without this property restore normally. Every subsequent shopping save preserves the marker. Strict recovery decoding occurs before the existing catalog-dependent hydration/clamping/coupon revalidation. Malformed/unsupported shopping, journals and order histories block bootstrap without being overwritten or silently reset.
+
+### Exact write and publication sequence
+
+1. **Lock and drain.** The provider synchronously blocks duplicate checkout taps and shopping mutations. The coordinator locks the existing shopping writer and drains already queued autosaves. It reads any pending journal first: retries use that intent, not today's cart/address. A fresh checkout requires a nonempty eligible cart and `AddressBookProvider.snapshotForOrder()`; that API supplies a durable, copied address without any GPS call. Generate IDs and timestamp once and freeze the validated receipt using `createOrderDraft`.
+2. **Prepare the source cart.** Check order-history readiness and persist the latest committed UI shopping snapshot through the same writer if it differs from storage. This optional pre-intent shopping write is needed when checkout beats the autosave effect. Checkpoint consistency and previously persisted coupon redemptions must be preserved. Failure here creates neither an order nor a journal.
+3. **Write the intent.** Persist the full frozen intent to the journal before calling `OrderRepository.create`. If this write rejects with an unknown commit outcome, retain its identity in memory, reread the journal on retry and use the original intent. A full process restart can recover only acknowledged or actually committed bytes; if no intent ever reached storage, there is no receipt/finalization to recover.
+4. **Write the receipt idempotently.** Validate the raw shopping source against the journal before touching history. Require exact cart ID/quantity pairs and active coupon, unless the shopping checkpoint already matches. Reject FIRST100 already redeemed under another checkpoint or a matching checkpoint missing its redemption. `OrderRepository.create(intent.order)` either appends the receipt or returns the identical existing receipt. Conflicts and damaged/unsupported history block finalization.
+5. **Write shopping finalization once.** Through the existing serialized shopping writer, reread and recheck the source. In one shopping JSON write, clear that cart and active coupon, set-union captured FIRST100 redemption, preserve recent searches/other used codes and set `lastFinalizedCheckoutId`. A matching checkpoint returns the existing snapshot without clearing a later cart or redeeming again. The writer rejects stale autosaves with an earlier checkpoint; no separate shopping writer or coupon write exists.
+6. **Publish only the committed shopping result.** The provider records the persisted snapshot key before dispatching `checkout-finalized`. This reducer action is idempotent for the same checkout, so repeated publication cannot clear a later cart or duplicate the success notice. The autosave effect skips this already persisted snapshot: publication causes no second finalization save. The legacy pure `place-order` reducer case remains for existing contract tests, but public provider dispatch refuses it; the live Cart only calls the asynchronous coordinator.
+7. **Clear the journal last.** Write `{ version: 1, pending: null }`, then unlock mutations and the next checkout. If cleanup fails, the receipt/shopping result remains committed and visible, while Cart reports recovery pending and retries that same checkout. If cleanup actually committed but its acknowledgement was lost, an in-memory receipt identifies that finalization: retry verifies its checkpoint and stored receipt, completes publication idempotently and unlocks without another write or address lookup. Never compensate by deleting an order or resetting the journal on error.
+
+For an already persisted source cart, the normal write sequence is **journal → orders → shopping → cleared journal**. The optional preparation write is before this sequence. Any I/O failure may occur before or after native commit; retry reads durable evidence rather than assuming a rejected promise means no write happened.
+
+### Startup and lifecycle
+
+`AppStateProvider` runs recovery before catalog-dependent shopping hydration or any initial autosave. A pending intent follows steps 4–7. With a matching checkpoint, later shopping contents survive and only receipt verification/cleanup is necessary. With no pending journal, validate healthy order history and strict shopping state; any checkpoint must link to a stored receipt, including FIRST100 redemption evidence. Only then load the catalog and hydrate. Failures show a blocking recovery screen with Retry, without discarding the journal or overwriting history. Active hydrated recovery also publishes an already committed checkpoint through the idempotent action.
+
+The coordinator, shopping writer and order repository serialize operations for a shared storage-port object in one JS runtime. Locks stop new autosaves and UI cart/coupon/search changes; queued old saves drain before intent capture. The provider also rejects checkout in the same event as a not-yet-committed React shopping action. Quantity/Add/Remove/coupon controls show disabled state. The address book remains independent: the captured address is immutable, and later address edits/deletion or permission revocation cannot change an unresolved receipt. Fresh checkout requires a selected address; recovery does not.
+
+Provider lifecycle generations guard every asynchronous publication and each next persistence phase. Unmount/recovery changes invalidate old callbacks; in-flight native operations cannot be cancelled, so their completed bytes are reconciled on the next recovery. There is no polling, second state library or unrelated provider rewrite.
+
+### Files and responsibility
+
+| File | Responsibility |
 | --- | --- |
-| Save order, then call today's `place-order` | Small, but a crash can leave a receipt with an uncleared cart/unredeemed coupon; retry has no durable identity. Reject. |
-| Move cart, coupon state and history into one new aggregate key | Larger migration, competes with the current shopping writer and risks `plazza.shopping.v1` compatibility. Reject for P2B. |
-| Durable checkout intent plus an idempotent shopping checkpoint | Adds one small recovery document and one optional shopping metadata field, keeps the existing cart store and gives deterministic retry. **Chosen proposal.** |
+| `src/features/orders/checkout.ts` | Checkout/recovery serialization, lifecycle checks, immutable intent and write ordering |
+| `src/storage/persistence.ts`, `src/domain/types.ts` | Backward-compatible checkpoint, strict recovery decoding, shared existing writer, source matching and idempotent finalization |
+| `src/state/appReducer.ts`, `src/state/AppStateProvider.tsx` | Mutation gate, idempotent publication, hydration ordering, async status and duplicate-autosave suppression |
+| `src/features/cart/CartScreen.tsx`, `CouponSection.tsx` | Selected-address requirement, loading, durable success and same-intent retry feedback; disabled coupon controls |
+| `src/components/MedicineCard.tsx`, `src/components/ui/QuantityControl.tsx` | Disabled shopping controls while checkout is locked |
+| `src/app/_layout.tsx` | Blocking startup recovery error/retry UI, preserving provider hierarchy |
+| `tests/checkout-recovery.test.ts`, `tests/checkout-provider.test.tsx` | Failure injection with real local repositories/writer; provider, lifecycle, reducer and Cart integration |
+| `tests/cart-ui.test.tsx` | Existing UI assertions retained; storage mock now handles shopping, orders and journal keys separately |
 
-Proposed `plazza.checkout.v1`: `{ version: 1, pending: { order: Order, oneTimeCouponCode: string | null } | null }`. It is a frozen confirmed intent, **not another active/editable cart**. The receipt already contains product IDs/quantities and coupon code for exact source-cart comparison; do not persist a second live cart. `oneTimeCouponCode` captures the redemption obligation once, without applying later promotion rules during recovery. No redundant phase flags are needed: the order and shopping checkpoint determine progress.
+### Tested crash windows and failure cases
 
-Keep `plazza.shopping.v1` and its current fields. Add optional `lastFinalizedCheckoutId` metadata, defaulting to null for old snapshots, and preserve it on every subsequent shopping write. Existing payloads remain readable. Older binaries do not understand/preserve this metadata or the intent journal; mixed-version writers/downgrades during unfinished checkout are outside the recovery guarantee.
-
-### Exact P2B implementation sequence
-
-1. **Add startup recovery before shopping hydration/autosave and checkout input.** Use one coordinator and the existing shopping store/writer. Block a second checkout and cart/coupon/address changes during an unresolved intent. Allow read-only browsing; expose retry/recovery failures instead of pretending checkout completed.
-2. **Capture one confirmed intent.** Drain outstanding shopping writes, await `AddressBookProvider.snapshotForOrder()`, validate a non-null address, and freeze current cart/products/bill/coupon using `createOrderDraft`. Generate and retain order ID, checkout ID and placement time once. Record the one-time coupon obligation without redeeming it. Persist the intent before attempting order creation. An uncertain intent write must be reread/retried, not replaced with a new checkout identity.
-3. **Persist the order/address receipt together in the orders value.** Call `OrderRepository.create(intent.order)`; both `created: true` and an identical `created: false` count as the same confirmed receipt. Conflicts or damaged history block further finalization. Never re-run live pricing or address lookup for an existing pending intent.
-4. **Finalize shopping through its existing serialized writer.** Verify the raw persisted cart ID/quantity pairs and active coupon match the intent, unless its checkpoint already matches. In one `plazza.shopping.v1` value write, clear that cart/active coupon, set-union the captured one-time coupon into used codes and set `lastFinalizedCheckoutId`. Preserve recent searches and other used codes. Drain/coordinate autosaves so a late pre-checkout write cannot restore the old cart. No second cart store and no separate coupon-redemption write.
-5. **Publish the persisted result.** Only after that shopping write succeeds, use a new idempotent reducer action to publish the committed shopping snapshot and success notice. Do not reuse today's immediate `place-order` action before durability; never display a successful durable checkout or clear the visible cart solely because the order write succeeded.
-6. **Clear the journal last.** Write `{ version: 1, pending: null }`, then unlock the next checkout. Cleanup failure must not roll back either committed value; show pending cleanup and retry. Keep the shopping checkpoint even after cleanup so a stale intent cannot clear a later cart.
-7. **On restart, reconcile before normal state restoration.** Validate the pending journal. Idempotently ensure its order exists. If the shopping checkpoint matches, retain current shopping contents and only finish cleanup—do not clear/redeem again. Otherwise compare raw persisted cart/coupon with the intent and perform step 4. Perform this comparison before catalog-dependent quantity clamping or coupon revalidation, which could otherwise hide the original intent after an app/catalog change. If the cart differs, or any data/schema is damaged/unsupported, block destructive recovery and require explicit reconciliation; never clear an unrelated/new cart.
-
-Planned P2B code boundaries (not implemented here):
-
-| File | Change |
+| Crash/failure point | Verified result |
 | --- | --- |
-| New `src/features/orders/checkout.ts` | Single checkout/recovery coordinator and immutable intent journal; use the P2A repository |
-| `src/storage/persistence.ts` | Preserve optional checkpoint metadata in v1; expose queue draining and one-value shopping finalization through the existing writer |
-| `src/state/appReducer.ts` / `AppStateProvider.tsx` | Add idempotent `checkout-finalized` publication; recover before hydration/autosave; enforce the checkout mutation gate |
-| `src/features/cart/CartScreen.tsx` | Call the coordinator, retain cart on failure, and show pending/retry states instead of dispatching immediate `place-order` |
-| New checkout-recovery tests plus persistence/reducer/Cart tests | Inject each crash/acknowledgement failure below; verify exactly one receipt, checkpoint-aware cart retention and one-time coupon set-union |
+| Intent write rejection before/after commit | No premature receipt/finalization; retry reuses captured identity |
+| After intent, before receipt | Restart creates the exact captured receipt and finalizes once |
+| Receipt write failure, crash after receipt, lost receipt acknowledgement | Identical create returns one receipt; original prices/time/address retained |
+| Shopping finalization failure before/after commit | Cart/coupon publish only after acknowledged durable finalization; retry recognizes an actually committed checkpoint |
+| After shopping, before cleanup; cleanup write failure/crash after commit | No second shopping finalization/redemption/notice; cleared journal or matching checkpoint reconciles safely |
+| Restart with checkpoint and a later cart | Later cart survives; stale autosave cannot restore the checked-out cart |
+| Different source cart without matching checkpoint | Recovery blocks before a receipt/destructive shopping write |
+| Damaged/unsupported journal/history/shopping, missing receipt/redemption evidence | Visible error and byte preservation; no silent reset |
+| Missing address, empty cart, duplicate taps, active mutations | No invalid order, duplicate prompt/receipt or overlapping checkout |
+| Unmount after native receipt commit, changed catalog on restart | Old callbacks ignored; recovery precedes live catalog normalization |
+| FIRST100 retry/restart and legacy v1 shopping restoration | Exactly one redemption, checkpoint preservation and backward compatibility |
 
-### Required P2B crash/retry tests
+### Guarantees, limitations and P2B-2
 
-| Crash/failure point | Expected recovery |
-| --- | --- |
-| Before a confirmed intent is stored | No order/finalization; persisted cart and coupon untouched |
-| After intent, before order write | Recreate from the exact intent, then finalize shopping |
-| After order commit / lost order acknowledgement | Identical create returns the same receipt; finalize once |
-| Before/after shopping write or its lost acknowledgement | Read checkpoint; retry the whole shopping value only if not finalized |
-| After shopping commit, before journal cleanup | Matching checkpoint prevents duplicate redemption and re-clearing |
-| Cleanup failure or duplicate taps | Same intent, no second order; preserve checkpoint and retry cleanup |
-| Later cart differs from an old intent | Matching checkpoint means cleanup only; absent/mismatching checkpoint means block, never wipe that cart |
-| Catalog, address or coupon rules changed after capture | Recover the stored receipt; never rebuild/reprice from live sources |
-| Corrupt/unsupported journal, shopping or order history | Visible recovery state; no silent reset or destructive write |
+This is recoverable coordination, **not an atomic multi-key transaction**. A receipt can exist while finalization is pending; do not interpret its mere existence as permission to clear an arbitrary cart. Acknowledged promises reflect platform storage acknowledgement, not protection against disk loss. Single-key native write integrity, a single application owner/shared port and no older or external writers are required. The ID generator is local demo identity, not server identity. Version-1 recovery deliberately rejects missing/forged FIRST100 obligations rather than inferring them from changing promotion rules.
 
-The proposal is recoverable coordination, not a claim that separate storage writes are atomic. Process crashes, full device storage loss, native write semantics and old/concurrent writers limit guarantees. A future backend/database transaction would be needed for stronger multi-device durability or real payments.
+Conflicting carts, corrupt/unsupported data or a checkpoint without its receipt/redemption fail closed and may require explicit reconciliation. Retry fixes transient I/O, not irreparable corruption; no destructive reset/repair UI is included. Downgrades/mixed-version writers, multi-process access, multi-device sync, backup/retention, encrypted storage and real payments require a stronger storage/backend contract. No order/address payload logging or analytics was added.
+
+P2B-2 should build Order History and Receipt UI from immutable repository snapshots, handle loading/empty/recovery states without live repricing/address lookup, and define explicit safe reconciliation UX where required. Keep checkout recovery before those consumers. Verify real Android force-stop/restart and storage failures before claiming native durability. Do not add tracking, fulfillment or payment behavior implicitly.
+
+### Android verification checklist (not performed here)
+
+- Place a demo order with/without FIRST100 and a selected manual address; verify loading/disabled controls, durable success and restart with empty cart/redemption preserved.
+- Attempt checkout without an address, tap twice rapidly, edit quantities/coupon immediately before/while checkout, and background/return during saves.
+- Force-stop/relaunch at intent, receipt, shopping-finalization and cleanup boundaries using a controlled debug storage failure harness; confirm one identity/receipt/redemption and retry feedback.
+- After finalization, add a different cart and relaunch with an old matching journal; confirm the later cart survives. Inject a conflicting cart or damaged journal and confirm blocking recovery without data reset.
+- Edit/delete the saved address and deny location permission after intent capture; recovery must keep the original address, while normal manual address entry/permission behavior remains intact.
 
 ## Verification and review
 
 On 29 October 2026, `npm run typecheck`, `npm run lint`, `npm test` and `npm run check` all passed: **299 tests / 24 suites**, including all 237 baseline cases and 62 new order cases. P2A tests cover receipt validity, empty/missing-address rejection, sparse arrays, item/price/address immutability, quantity and money bounds, current pricing semantics, historical restoration without live dependencies, persistence/restart, idempotency/conflicts, shared-port serialization, mutation while queued, write failure/retry/lost acknowledgements, corrupt records/envelopes, unsupported versions and isolation from FIRST100/shopping/address persistence.
 
 Ponytail was not installed (no CLI, dependency or enabled tool); a manual source/diff review was used. Review fixes included explicit copying of Bill fields so extra properties cannot override receipt identity/items, safe aggregate quantity validation, dense item validation so sparse arrays cannot bypass empty-cart checks, and repository-level public error types that future adapters can reuse. Final command results and commit hashes are reported with the implementation. P2A does not change application UI or native APIs, start EAS builds, push commits, implement Plus/tracking/maps/payments, or claim device verification.
+
+
+P2B-1 verification on 29 October 2026: `npm run typecheck`, `npm run lint`, `npm test` and `npm run check` passed with **342 tests / 26 suites**: all 299 baseline cases plus 43 focused checkout cases. Source/diff review covered lock acquisition, shared writer ordering, checkpoint evidence, uncertain acknowledgements, cleanup, same-event React actions and lifecycle invalidation. No physical Android device testing, APK build or push was performed. The pre-existing `app.json` edit is excluded from implementation commits.
