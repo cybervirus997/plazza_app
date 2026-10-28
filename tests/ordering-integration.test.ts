@@ -269,3 +269,21 @@ test('remount recovery waits for an invalidated in-flight simulator instead of r
   expect((await recovery).attempt?.status).toBe('initiated');
   expect(await receipts(app)).toHaveLength(0);
 });
+
+test('a crash after source preparation but before payment creation restores only the cart', async () => {
+  const app = paymentSetup();
+  app.data.delete(STORAGE_KEY);
+  let active = true;
+  jest.mocked(app.port.setItem).mockImplementation(async (key, value) => {
+    app.data.set(key, value);
+    if (key === STORAGE_KEY) active = false;
+  });
+  await expect(app.service.start(app.start, { isCurrent: () => active })).rejects.toBeInstanceOf(CheckoutCancelledError);
+  expect(app.data.has(PAYMENT_STORAGE_KEY)).toBe(false);
+  expect(app.data.has(CHECKOUT_STORAGE_KEY)).toBe(false);
+  expect(await receipts(app)).toHaveLength(0);
+  const result = await createOrderingService(app.port, app.options).recover();
+  expect(result.attempt).toBeNull();
+  expect(result.snapshot).toEqual(app.start.snapshot);
+  expect(result.snapshot.usedCouponCodes).toEqual([]);
+});
