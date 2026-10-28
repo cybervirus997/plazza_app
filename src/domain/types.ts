@@ -15,6 +15,7 @@ export interface CartEntry {
 export type Cart = readonly CartEntry[];
 
 export interface ShoppingState {
+  readonly lastFinalizedCheckoutId?: string | null;
   readonly cart: Cart;
   readonly activeCouponCode: string | null;
   readonly usedCouponCodes: readonly string[];
