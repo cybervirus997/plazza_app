@@ -14,3 +14,11 @@ test('recent searches deduplicate case-insensitively and move to the front', () 
   expect(addRecentSearch(['Care', 'Relief'], ' relief ')).toEqual(['relief', 'Care']);
 });
 test('blank recent queries are ignored', () => expect(addRecentSearch(['Care'], '   ')).toEqual(['Care']));
+
+test('filtering is deterministic and leaves the readonly catalog unchanged', () => {
+  const frozen = Object.freeze(catalog.map((medicine) => Object.freeze({ ...medicine })));
+  const first = searchMedicines(frozen, 'test');
+  expect(first.map((medicine) => medicine.id)).toEqual(['a', 'b', 'c', 'd']);
+  expect(searchMedicines(frozen, '  TEST  ')).toEqual(first);
+  expect(frozen).toEqual(catalog);
+});
