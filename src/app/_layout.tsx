@@ -28,6 +28,7 @@ function Routes() {
   return <Stack screenOptions={reducedMotion ? quietStackOptions : stackOptions}>
     <Stack.Screen name="(tabs)" options={returningScreenOptions} />
     <Stack.Screen name="checkout" options={returningScreenOptions} />
+    <Stack.Screen name="addresses" options={returningScreenOptions} />
     <Stack.Screen name="orders/index" options={returningScreenOptions} />
   </Stack>;
 }

@@ -1,5 +1,5 @@
 import { act, type ReactNode } from 'react';
-import { Alert, type PressableProps } from 'react-native';
+import { Alert, Keyboard, type PressableProps } from 'react-native';
 import { createRoot, type Root, type TestInstance, type TestNode } from 'test-renderer';
 import { router } from 'expo-router';
 import { addressDraft, emptyAddressBook, type AddressBook, type AddressDraft } from '../src/domain/addresses';
@@ -22,7 +22,7 @@ const mockPermissions = { location: 'denied' as PermissionSnapshot['location'], 
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
 jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => (() => void) | void) => { const React = jest.requireActual<typeof import('react')>('react'); React.useEffect(effect, [effect]); },
-  router: { navigate: jest.fn(), push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => true },
+  router: { navigate: jest.fn(), push: jest.fn(), back: jest.fn(), replace: jest.fn(), dismissTo: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: () => mockParams,
   usePreventRemove: (prevented: boolean, callback: (options: { repeat(): void }) => void) => {
     mockPreventRemove = { prevented, callback }; return mockDisablePrevention;
@@ -78,9 +78,12 @@ async function enterRequired(root: Root) {
 beforeEach(() => {
   delete mockParams.id;
   jest.clearAllMocks();
+  jest.mocked(router.dismissTo).mockReset();
+  jest.mocked(router.canGoBack).mockReturnValue(true);
   mockPermissions.location = 'denied'; mockPermissions.checking = false; mockPermissions.busy = false;
   jest.mocked(fetchDeliveryLocation).mockReset().mockResolvedValue({ location: 'granted', coordinates: { latitude: 12, longitude: 77 }, locationMessage: 'Found' });
   jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => {});
 });
 afterEach(() => jest.restoreAllMocks());
 
@@ -234,6 +237,72 @@ test('Android Back uses the Router removal guard to preserve or explicitly disca
     expect(repeat).toHaveBeenCalledTimes(1);
     expect(mockPreventRemove.prevented).toBe(false);
     expect(port.setItem).not.toHaveBeenCalled();
+  } finally { await app.unmount(); }
+});
+
+test.each([false, true])('direct-link form Back uses a bounded address-book fallback (missing address: %s)', async (missing) => {
+  jest.mocked(router.canGoBack).mockReturnValue(false);
+  if (missing) mockParams.id = 'missing';
+  const { port } = storage();
+  const app = await mount(createLocalAddressRepository(port));
+  try {
+    await act(async () => { invoke(labelled(app.root, missing ? 'Back to address book' : 'Back from address form'), 'onPress'); });
+    expect(Keyboard.dismiss).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).toHaveBeenCalledWith('/addresses');
+    expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(port.setItem).not.toHaveBeenCalled();
+  } finally { await app.unmount(); }
+});
+
+test('direct-link toolbar Back retains the removal guard until unsaved changes are explicitly discarded', async () => {
+  jest.mocked(router.canGoBack).mockReturnValue(false);
+  const { port } = storage();
+  const app = await mount(createLocalAddressRepository(port));
+  try {
+    await act(async () => { invoke(labelled(app.root, 'City *'), 'onChangeText', 'Mysuru'); });
+    const repeat = jest.fn();
+    jest.mocked(router.dismissTo).mockImplementationOnce(() => {
+      expect(mockPreventRemove.prevented).toBe(true);
+      mockPreventRemove.callback?.({ repeat });
+    });
+    await act(async () => { invoke(labelled(app.root, 'Back from address form'), 'onPress'); });
+    expect(Alert.alert).toHaveBeenLastCalledWith('Discard address changes?', expect.any(String), expect.any(Array));
+    expect(repeat).not.toHaveBeenCalled();
+    expect(mockDisablePrevention).not.toHaveBeenCalled();
+    expect(labelled(app.root, 'City *').props.value).toBe('Mysuru');
+    const options = jest.mocked(Alert.alert).mock.calls.at(-1)?.[2];
+    await act(async () => { options?.find((option) => option.text === 'Discard')?.onPress?.(); });
+    expect(repeat).toHaveBeenCalledTimes(1);
+    expect(mockPreventRemove.prevented).toBe(false);
+    expect(port.setItem).not.toHaveBeenCalled();
+  } finally { await app.unmount(); }
+});
+
+test('a direct-link save blocks Back while pending and returns only after the address is durable', async () => {
+  jest.mocked(router.canGoBack).mockReturnValue(false);
+  const { port, data } = storage();
+  const pending = deferred<void>();
+  jest.mocked(port.setItem).mockImplementationOnce(async (key, value) => { await pending.promise; data.set(key, value); });
+  const repository = createLocalAddressRepository(port);
+  const app = await mount(repository);
+  try {
+    await enterRequired(app.root);
+    await act(async () => { invoke(labelled(app.root, 'Save address'), 'onPress'); });
+    expect(labelled(app.root, 'Back from address form').props.accessibilityState).toMatchObject({ disabled: true });
+    const repeat = jest.fn();
+    await act(async () => { mockPreventRemove.callback?.({ repeat }); });
+    expect(Alert.alert).toHaveBeenLastCalledWith('Saving address', expect.any(String));
+    expect(repeat).not.toHaveBeenCalled();
+    expect(router.dismissTo).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    await act(async () => { pending.resolve(); });
+    expect(app.read().book.addresses).toHaveLength(1);
+    expect((await repository.load()).book).toEqual(app.read().book);
+    expect(mockDisablePrevention).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).toHaveBeenCalledWith('/addresses');
+    expect(Keyboard.dismiss).toHaveBeenCalledTimes(1);
   } finally { await app.unmount(); }
 });
 

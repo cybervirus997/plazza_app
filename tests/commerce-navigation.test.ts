@@ -15,7 +15,7 @@ jest.mock('expo-router', () => ({
   },
 }));
 function navigation(initial = '(tabs)') {
-  const routeNames = ['(tabs)', 'checkout', 'payment', 'order-confirmation', 'orders/index', 'orders/[id]'];
+  const routeNames = ['(tabs)', 'checkout', 'payment', 'order-confirmation', 'orders/index', 'orders/[id]', 'addresses', 'address-form'];
   const engine = StackRouter({});
   let state: StackNavigationState<Record<string, object | undefined>> = { stale: false, type: 'stack', key: 'root', routeKeySeq: 1,
     index: 0, routeNames, routes: [{ key: 'initial', name: initial }] };
@@ -69,6 +69,15 @@ test('direct-link Back has a bounded fallback instead of creating another histor
   const nav = navigation('orders/[id]'); backTo('/orders');
   expect(nav.names()).toEqual(['orders/index']);
   expect(router.dismissTo).toHaveBeenCalledWith('/orders');
+});
+test('address-form Back preserves the originating book key, and a direct-link fallback stays bounded', () => {
+  const nav = navigation('addresses'); const bookKey = nav.state().routes[0].key;
+  router.navigate('/address-form'); backTo('/addresses');
+  expect(nav.names()).toEqual(['addresses']);
+  expect(nav.state().routes[0].key).toBe(bookKey);
+  const direct = navigation('address-form'); backTo('/addresses');
+  expect(direct.names()).toEqual(['addresses']);
+  backTo('/addresses'); expect(direct.names()).toEqual(['addresses']);
 });
 test('shared transition policy provides horizontal forward/reverse pops and reduced-motion fallback', () => {
   expect(stackOptions.animation).toBe('slide_from_right');

@@ -1,12 +1,13 @@
-import { router, useLocalSearchParams, usePreventRemove } from 'expo-router';
+import { useLocalSearchParams, usePreventRemove } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { addressDraft, addressLabels, deliveryOptions, gateOptions, validateAddress,
   type AddressDraft, type AddressErrors, type DeliveryAddress } from '../../domain/addresses';
 import { colors, ui } from '../../theme/tokens';
+import { backTo } from '../../navigation/commerceNavigation';
 import { useAddressBook } from './AddressBookProvider';
 import { useAddressLocation } from './useAddressLocation';
 
@@ -37,7 +38,7 @@ function Choice({ title, selected, onPress, disabled = false }: { title: string;
     <Text style={[styles.choiceText, selected && styles.activeText]}>{selected ? '✓ ' : ''}{title}</Text>
   </Pressable>;
 }
-function returnToBook() { if (router.canGoBack()) router.back(); else router.replace('/addresses'); }
+function returnToBook() { backTo('/addresses'); }
 
 function AddressForm({ address }: { address?: DeliveryAddress }) {
   const addresses = useAddressBook();
@@ -84,7 +85,6 @@ function AddressForm({ address }: { address?: DeliveryAddress }) {
     setSavingForm(false);
     if (success) {
       setSaved(true);
-      Keyboard.dismiss();
       disablePrevention();
       returnToBook();
     }
