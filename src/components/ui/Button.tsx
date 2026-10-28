@@ -21,11 +21,11 @@ export function Button({ label, onPress, disabled = false, selected, variant = '
 }
 
 const styles = StyleSheet.create({
-  button: { minWidth: controls.minTouch, minHeight: controls.minTouch, borderRadius: radii.md, paddingHorizontal: space.lg, paddingVertical: space.md, justifyContent: 'center', alignItems: 'center' },
+  button: { minWidth: controls.minTouch, minHeight: controls.minTouch, maxWidth: '100%', borderRadius: radii.md, paddingHorizontal: space.lg, paddingVertical: space.md, justifyContent: 'center', alignItems: 'center' },
   primary: { backgroundColor: colors.primary },
   secondary: { backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.border },
   quiet: { backgroundColor: 'transparent' },
-  text: { ...typography.action, textAlign: 'center' },
+  text: { ...typography.action, textAlign: 'center', flexShrink: 1 },
   lightText: { color: colors.white }, darkText: { color: colors.primary },
   disabled: { opacity: 0.45 }, pressed: { opacity: 0.7 },
 });

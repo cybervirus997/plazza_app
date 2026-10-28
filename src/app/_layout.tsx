@@ -1,4 +1,4 @@
-import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, type NativeStackNavigationOptions } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Button } from '../components/ui/Button';
@@ -14,6 +14,8 @@ import { CheckoutPreferencesProvider } from '../features/orders/CheckoutPreferen
 export { ErrorBoundary } from 'expo-router';
 export const unstable_settings = { anchor: '(tabs)' };
 const tabOptions = { ...returningScreenOptions, headerShown: false };
+const scanOptions: NativeStackNavigationOptions = { presentation: 'modal', animation: 'slide_from_bottom', title: 'Scan medicine' };
+const quietScanOptions: NativeStackNavigationOptions = { ...scanOptions, animation: 'none' };
 
 function Routes() {
   const reducedMotion = useReducedMotion();
@@ -31,6 +33,7 @@ function Routes() {
     <Stack.Screen name="checkout" options={returningScreenOptions} />
     <Stack.Screen name="addresses" options={returningScreenOptions} />
     <Stack.Screen name="orders/index" options={returningScreenOptions} />
+    <Stack.Screen name="scan-medicine" options={reducedMotion ? quietScanOptions : scanOptions} />
   </Stack>;
 }
 

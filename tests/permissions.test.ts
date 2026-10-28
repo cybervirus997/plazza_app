@@ -113,7 +113,7 @@ test('explicit location retrieval reads real coordinates after location becomes 
   });
   const result = await fetchDeliveryLocation();
   expect(result.coordinates).toEqual({ latitude: 12.345678, longitude: 76.54321 });
-  expect(result.locationMessage).toBe('Delivering to: 12.3457, 76.5432');
+  expect(result.locationMessage).toBe('Device GPS: 12.3457, 76.5432');
 });
 test('a location timeout preserves shopping access', async () => {
   jest.useFakeTimers();

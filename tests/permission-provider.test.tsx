@@ -24,7 +24,7 @@ jest.mock('react-native/Libraries/Components/Pressable/Pressable', () => {
 const granted: PermissionSnapshot = { ...initialPermissions, location: 'granted', notifications: 'granted',
   locationMessage: 'Location access is enabled.' };
 const denied: PermissionSnapshot = { ...granted, location: 'denied', coordinates: null, locationMessage: 'Location access is off.' };
-const fix = { location: 'granted' as const, coordinates: { latitude: 12.3, longitude: 45.6 }, locationMessage: 'Delivering to: 12.3000, 45.6000' };
+const fix = { location: 'granted' as const, coordinates: { latitude: 12.3, longitude: 45.6 }, locationMessage: 'Device GPS: 12.3000, 45.6000' };
 let change: (state: AppStateStatus) => void;
 let focus: () => void;
 let blur: () => void;
@@ -82,13 +82,18 @@ beforeEach(() => {
   jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
 });
 
-test('initial authorized setup fetches once; repeated Refresh only reads status and preserves the fix', async () => {
+test('startup reads status only; an explicit GPS fix survives repeated status-only Refresh', async () => {
   const screen = await setup();
   try {
+    expect(screen.read().coordinates).toBeNull();
+    expect(fetchDeliveryLocation).not.toHaveBeenCalled();
+    expect(requestInitialPermissions).not.toHaveBeenCalled();
+    expect(requestPermissions).not.toHaveBeenCalled();
+    await act(async () => { screen.read().updateLocation(); });
     expect(screen.read().coordinates).toEqual(fix.coordinates);
     expect(fetchDeliveryLocation).toHaveBeenCalledTimes(1);
     await act(async () => { screen.read().refresh(); screen.read().refresh(); screen.read().request(); });
-    expect(readPermissions).toHaveBeenCalledTimes(1);
+    expect(readPermissions).toHaveBeenCalledTimes(2);
     expect(requestPermissions).not.toHaveBeenCalled();
     expect(fetchDeliveryLocation).toHaveBeenCalledTimes(1);
     expect(screen.read().coordinates).toEqual(fix.coordinates);
@@ -98,8 +103,34 @@ test('initial authorized setup fetches once; repeated Refresh only reads status 
   } finally { await screen.unmount(); }
 });
 
+test.each(['undetermined', 'denied', 'granted'] as const)('startup and an unchanged Refresh with %s access never prompt or start GPS', async (location) => {
+  jest.mocked(readPermissions).mockResolvedValue({ ...initialPermissions, location });
+  const screen = await setup();
+  try {
+    await act(async () => { screen.read().refresh(); });
+    expect(screen.read().location).toBe(location);
+    expect(readPermissions).toHaveBeenCalledTimes(2);
+    expect(requestInitialPermissions).not.toHaveBeenCalled();
+    expect(requestPermissions).not.toHaveBeenCalled();
+    expect(fetchDeliveryLocation).not.toHaveBeenCalled();
+  } finally { await screen.unmount(); }
+});
+
+test('a background launch waits for foreground status without treating the first observation as a new GPS grant', async () => {
+  jest.replaceProperty(AppState, 'currentState', 'background');
+  const screen = await setup();
+  try {
+    expect(readPermissions).not.toHaveBeenCalled();
+    await transition('active');
+    expect(screen.read().location).toBe('granted');
+    expect(readPermissions).toHaveBeenCalledTimes(1);
+    expect(fetchDeliveryLocation).not.toHaveBeenCalled();
+    expect(requestPermissions).not.toHaveBeenCalled();
+  } finally { await screen.unmount(); }
+});
+
 test.each(['denied', 'blocked', 'unavailable'] as const)('%s location never starts GPS or exposes Update Location', async (location) => {
-  jest.mocked(requestInitialPermissions).mockResolvedValue({ ...denied, location });
+  jest.mocked(readPermissions).mockResolvedValue({ ...denied, location });
   const screen = await setup();
   try {
     await act(async () => { screen.read().updateLocation(); });
@@ -110,7 +141,7 @@ test.each(['denied', 'blocked', 'unavailable'] as const)('%s location never star
 });
 
 test('newly granted permission after Enable access fetches once; duplicate taps do not duplicate prompts', async () => {
-  jest.mocked(requestInitialPermissions).mockResolvedValue(denied);
+  jest.mocked(readPermissions).mockResolvedValueOnce(denied);
   const pending = deferred<PermissionSnapshot>();
   jest.mocked(requestPermissions).mockReturnValue(pending.promise);
   const screen = await setup();
@@ -125,7 +156,7 @@ test('newly granted permission after Enable access fetches once; duplicate taps 
 });
 
 test('returning from Settings newly granted fetches once, then ordinary background returns only recheck status', async () => {
-  jest.mocked(requestInitialPermissions).mockResolvedValue({ ...denied, location: 'blocked' });
+  jest.mocked(readPermissions).mockResolvedValueOnce({ ...denied, location: 'blocked' });
   const screen = await setup();
   try {
     await act(async () => { screen.read().openSettings(); screen.read().openSettings(); });
@@ -148,6 +179,7 @@ test('revocation hides coordinates immediately while status is pending and never
   const pendingStatus = deferred<PermissionSnapshot>();
   const screen = await setup();
   try {
+    await act(async () => { screen.read().updateLocation(); });
     jest.mocked(fetchDeliveryLocation).mockReturnValue(pendingFix.promise);
     await act(async () => { screen.read().updateLocation(); screen.read().updateLocation(); });
     expect(fetchDeliveryLocation).toHaveBeenCalledTimes(2);
@@ -169,6 +201,7 @@ test('Refresh detects revocation during GPS acquisition without waiting for the 
   jest.mocked(fetchDeliveryLocation).mockReturnValue(pendingFix.promise);
   const screen = await setup();
   try {
+    await act(async () => { screen.read().updateLocation(); });
     expect(screen.read().locating).toBe(true);
     jest.mocked(readPermissions).mockResolvedValue(denied);
     await act(async () => { screen.read().refresh(); });
@@ -179,9 +212,9 @@ test('Refresh detects revocation during GPS acquisition without waiting for the 
   } finally { await screen.unmount(); }
 });
 
-test('resume events during an initial native request coalesce into one fresh check and discard stale status', async () => {
+test('resume events during the initial status read coalesce into one fresh check and discard stale status', async () => {
   const pending = deferred<PermissionSnapshot>();
-  jest.mocked(requestInitialPermissions).mockReturnValue(pending.promise);
+  jest.mocked(readPermissions).mockReturnValueOnce(pending.promise);
   jest.mocked(readPermissions).mockResolvedValue(denied);
   const screen = await setup();
   try {
@@ -189,9 +222,9 @@ test('resume events during an initial native request coalesce into one fresh che
     await transition('background');
     await transition('active');
     await transition('active');
-    expect(readPermissions).not.toHaveBeenCalled();
-    await act(async () => { pending.resolve(granted); });
     expect(readPermissions).toHaveBeenCalledTimes(1);
+    await act(async () => { pending.resolve(granted); });
+    expect(readPermissions).toHaveBeenCalledTimes(2);
     expect(screen.read().location).toBe('denied');
     expect(fetchDeliveryLocation).not.toHaveBeenCalled();
     expect(screen.read().checking).toBe(false);
@@ -201,6 +234,7 @@ test('resume events during an initial native request coalesce into one fresh che
 test('permission read failures release busy state and Refresh can recover', async () => {
   const screen = await setup();
   try {
+    await act(async () => { screen.read().updateLocation(); });
     jest.mocked(readPermissions).mockRejectedValueOnce(new Error('native read failed'));
     await act(async () => { screen.read().refresh(); });
     expect(screen.read().busy).toBe(false);
@@ -216,6 +250,7 @@ test('an unexpected location failure releases the location action and can be ret
   jest.mocked(fetchDeliveryLocation).mockRejectedValueOnce(new Error('native location failed'));
   const screen = await setup();
   try {
+    await act(async () => { screen.read().updateLocation(); });
     expect(screen.read().busy).toBe(false);
     expect(screen.read().locationMessage).toContain('Could not find');
     await act(async () => { screen.read().updateLocation(); });
@@ -242,6 +277,7 @@ test('unmount removes the listener, invalidates a pending fix and makes old acti
   const pending = deferred<Awaited<ReturnType<typeof fetchDeliveryLocation>>>();
   jest.mocked(fetchDeliveryLocation).mockReturnValue(pending.promise);
   const screen = await setup();
+  await act(async () => { screen.read().updateLocation(); });
   const beforeUnmount = screen.read();
   const isCurrent = jest.mocked(fetchDeliveryLocation).mock.calls[0][0];
   expect(isCurrent?.()).toBe(true);
@@ -254,7 +290,7 @@ test('unmount removes the listener, invalidates a pending fix and makes old acti
   });
   expect(remove).toHaveBeenCalledTimes(3);
   expect(screen.renders).toHaveBeenCalledTimes(renders);
-  expect(readPermissions).not.toHaveBeenCalled();
+  expect(readPermissions).toHaveBeenCalledTimes(1);
   expect(Linking.openSettings).not.toHaveBeenCalled();
 });
 
@@ -273,11 +309,13 @@ test('unmount during a status read or a failed Settings launch never renders lat
 
 test('StrictMode cleanup cannot apply the first effect lifetime’s asynchronous result', async () => {
   const old = deferred<PermissionSnapshot>();
-  jest.mocked(requestInitialPermissions).mockReturnValueOnce(old.promise).mockResolvedValue(granted);
+  jest.mocked(readPermissions).mockReturnValueOnce(old.promise).mockResolvedValue(granted);
   const screen = await setup(true);
   try {
     await act(async () => { old.resolve(denied); });
     expect(screen.read().location).toBe('granted');
+    expect(fetchDeliveryLocation).not.toHaveBeenCalled();
+    await act(async () => { screen.read().updateLocation(); });
     expect(screen.read().coordinates).toEqual(fix.coordinates);
     expect(fetchDeliveryLocation).toHaveBeenCalledTimes(1);
   } finally { await screen.unmount(); }
@@ -286,10 +324,11 @@ test('StrictMode cleanup cannot apply the first effect lifetime’s asynchronous
 test('Android blur/focus rechecks without new GPS or duplicate work when AppState stays active', async () => {
   const screen = await setup();
   try {
+    await act(async () => { screen.read().updateLocation(); });
     await act(async () => { blur(); });
     expect(screen.read().coordinates).toBeNull();
     await act(async () => { focus(); focus(); });
-    expect(readPermissions).toHaveBeenCalledTimes(1);
+    expect(readPermissions).toHaveBeenCalledTimes(2);
     expect(screen.read().coordinates).toEqual(fix.coordinates);
     expect(fetchDeliveryLocation).toHaveBeenCalledTimes(1);
   } finally { await screen.unmount(); }
@@ -301,6 +340,7 @@ test('revocation detected by GPS invalidates an older pending permission read', 
   jest.mocked(fetchDeliveryLocation).mockReturnValue(pendingFix.promise);
   const screen = await setup();
   try {
+    await act(async () => { screen.read().updateLocation(); });
     jest.mocked(readPermissions).mockReturnValueOnce(oldStatus.promise).mockResolvedValue(denied);
     await act(async () => { screen.read().refresh(); });
     await act(async () => { pendingFix.resolve(denied); });
@@ -309,7 +349,7 @@ test('revocation detected by GPS invalidates an older pending permission read', 
     expect(screen.read().coordinates).toBeNull();
     expect(screen.read().busy).toBe(false);
     expect(fetchDeliveryLocation).toHaveBeenCalledTimes(1);
-    expect(readPermissions).toHaveBeenCalledTimes(2);
+    expect(readPermissions).toHaveBeenCalledTimes(3);
   } finally { await screen.unmount(); }
 });
 

@@ -46,10 +46,13 @@ test('recovery gates the stack once; hydration and reduced-motion updates preser
     const tabs = root.container.queryAll((node) => node.type === 'RouteOptions' && node.props.name === '(tabs)')[0];
     expect(tabs.props.options).toMatchObject({ headerShown: false, animationTypeForReplace: 'pop' });
     expect(unstable_settings.anchor).toBe('(tabs)');
+    const scan = root.container.queryAll((node) => node.type === 'RouteOptions' && node.props.name === 'scan-medicine')[0];
+    expect(scan.props.options).toMatchObject({ presentation: 'modal', animation: 'slide_from_bottom', title: 'Scan medicine' });
     mockReducedMotion = true;
     await act(async () => { root.render(<RootLayout />); });
     expect(root.container.queryAll((node) => node.type === 'NativeStack')[0]).toBe(stack);
     expect(stack.props.screenOptions.animation).toBe('none');
+    expect(root.container.queryAll((node) => node.type === 'RouteOptions' && node.props.name === 'scan-medicine')[0].props.options.animation).toBe('none');
     expect(mockStackMounted).toHaveBeenCalledTimes(1);
     expect(mockStackUnmounted).not.toHaveBeenCalled();
   } finally { await act(async () => { root.unmount(); }); }

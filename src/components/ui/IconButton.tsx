@@ -5,6 +5,8 @@ import { colors, controls, radii } from '../../theme/tokens';
 const icons = {
   back: { ios: 'arrow.left', android: 'arrow_back', web: 'arrow_back' },
   close: { ios: 'xmark', android: 'close', web: 'close' },
+  settings: { ios: 'gearshape', android: 'settings', web: 'settings' },
+  scan: { ios: 'barcode.viewfinder', android: 'qr_code_scanner', web: 'qr_code_scanner' },
 } as const;
 
 export function IconButton({ icon, label, onPress, disabled = false }: {

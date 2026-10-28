@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { router } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MedicineCard } from '../../components/MedicineCard';
@@ -12,12 +11,13 @@ import { CategoryStrip } from './CategoryStrip';
 import { HomeSection } from './HomeSection';
 import { resolveHomeSections } from './sections';
 import { useShopping } from '../../state/AppStateProvider';
-import { colors, ui } from '../../theme/tokens';
-import { DeliveryLocation, PermissionPanel } from '../permissions/PermissionPanel';
+import { colors, controls, radii, space, ui } from '../../theme/tokens';
 import { useMedicineSearch } from '../search/useMedicineSearch';
+import { MedicineSearchBar } from '../search/MedicineSearchBar';
+import { HomeHeader } from './HomeHeader';
 import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
 import { unresolvedPayment } from '../../domain/payments';
-import { openOrders, openPayment } from '../../navigation/commerceNavigation';
+import { openPayment } from '../../navigation/commerceNavigation';
 
 const SUGGESTION_LIMIT = 6;
 type HomeRow = ReturnType<typeof resolveHomeSections>[number] | { kind: 'result'; id: string; medicine: Medicine };
@@ -61,40 +61,22 @@ export default function HomeScreen() {
   }
 
   const header = <View style={styles.header}>
-    <View style={ui.between}>
-      <View style={ui.row}>
-        <View style={styles.brandMark} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={styles.brandPlus}>+</Text></View>
-        <Text accessibilityRole="header" style={styles.brand}>Plazza</Text>
-      </View>
-      <View><Text style={styles.brandTag}>YOUR EVERYDAY CARE</Text><Button label="Orders" variant="quiet" onPress={openOrders} /></View>
-    </View>
-    <DeliveryAddressEntry />
-    {unresolvedPayment(payment.attempt) && <View style={ui.card}>
+    <HomeHeader />
+    <DeliveryAddressEntry compact />
+    <MedicineSearchBar query={query} onChange={typeQuery} onSubmit={() => commitSearch()}
+      onScan={() => { Keyboard.dismiss(); router.navigate('/scan-medicine'); }} />
+    {unresolvedPayment(payment.attempt) && <View style={styles.pending}>
       <Text style={ui.body}>A saved simulated payment needs your attention. No new checkout is needed.</Text>
       <Button label="Resume saved payment" variant="secondary" onPress={openPayment} />
     </View>}
-    <DeliveryLocation />
-    <PermissionPanel compact />
-    <View style={styles.searchBox}>
-      <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={colors.primary} size={21} style={styles.searchIcon} />
-      <TextInput accessibilityLabel="Search medicines by name or salt" placeholder="Search products, medicines or ingredients"
-        placeholderTextColor={colors.muted} value={query} onChangeText={typeQuery}
-        returnKeyType="search" onSubmitEditing={() => commitSearch()} autoCorrect={false} style={[ui.input, styles.searchInput]} />
-      {query.length > 0 && <Pressable accessibilityRole="button" accessibilityLabel="Clear search"
-        onPress={() => typeQuery('')} style={styles.clear}><Text style={styles.clearText}>×</Text></Pressable>}
-    </View>
     <NoticeBanner />
     {!hasQuery && <>
-      <View style={styles.discovery}>
-        <View style={styles.discoveryHeading}>
-          <View style={styles.discoveryIcon}><SymbolView name={{ ios: 'cross.case', android: 'medication', web: 'medication' }} size={28} tintColor={colors.primary} /></View>
-          <View style={ui.flex}><Text style={ui.label}>CARE, WITHIN REACH</Text><Text style={styles.discoveryTitle}>Find your everyday essentials</Text></View>
-        </View>
-        <Text style={ui.body}>Medicines and everyday essentials, together in one demo catalog.</Text>
-        <Button label="Browse all medicines" disabled={catalogStatus !== 'ready'} onPress={() => router.navigate('/browse')} />
-        {catalogStatus === 'ready' && <Text style={ui.small}>{catalog.length} products · {catalog.length - demoCount} medicines + {demoCount} demo essentials</Text>}
-      </View>
       <CategoryStrip />
+      <View style={styles.discovery}>
+        <Text accessibilityRole="header" style={ui.heading}>Find your everyday essentials</Text>
+        {catalogStatus === 'ready' && <Text style={ui.small}>{catalog.length} products · {catalog.length - demoCount} medicines + {demoCount} demo essentials</Text>}
+        <Button label="Browse all medicines" variant="secondary" disabled={catalogStatus !== 'ready'} onPress={() => router.navigate('/browse')} />
+      </View>
       {state.recentSearches.length > 0 && <View style={styles.recent}>
         <Text accessibilityRole="header" style={ui.label}>RECENT SEARCHES</Text>
         <View style={styles.chips}>{state.recentSearches.map((recent) =>
@@ -118,7 +100,7 @@ export default function HomeScreen() {
 
   return <SafeAreaView edges={['top', 'left', 'right']} style={ui.screen}>
     <FlatList data={rows} keyExtractor={(item) => item.id} extraData={state.cart}
-      keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={ui.content}
+      keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[ui.content, styles.content]}
       ListHeaderComponent={header} renderItem={({ item }) => item.kind === 'result'
         ? <MedicineCard medicine={item.medicine}
           quantity={state.cart.find((entry) => entry.medicineId === item.id)?.quantity ?? 0}
@@ -141,20 +123,10 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { gap: 18 },
-  brand: { color: colors.primaryDark, fontSize: 29, fontWeight: '800', letterSpacing: -1.1 },
-  brandMark: { width: 32, height: 34, backgroundColor: colors.primary, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  brandPlus: { color: colors.white, fontSize: 29, fontWeight: '500', lineHeight: 32 },
-  brandTag: { flexShrink: 1, maxWidth: 115, color: colors.muted, fontSize: 9, letterSpacing: 1.4, fontWeight: '600', textAlign: 'right' },
-  discovery: { backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.border, padding: 18, borderRadius: 20, gap: 14 },
-  discoveryHeading: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-  discoveryIcon: { backgroundColor: colors.surface, width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  discoveryTitle: { color: colors.primaryDark, fontSize: 22, lineHeight: 28, fontWeight: '700', marginTop: 6, letterSpacing: -0.3 },
-  searchBox: { borderWidth: 1, borderColor: colors.border, borderRadius: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface },
-  searchIcon: { marginLeft: 16 }, searchInput: { paddingHorizontal: 12, minWidth: 0 },
-  clear: { minWidth: 44, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, clearText: { fontSize: 24, color: colors.muted },
-  recent: { gap: 10 }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 44, maxWidth: '100%', paddingHorizontal: 14, paddingVertical: 12, borderRadius: 24, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  content: { padding: space.lg, paddingTop: space.sm }, header: { gap: space.lg },
+  discovery: { gap: space.sm }, pending: { gap: space.sm, borderLeftWidth: 2, borderLeftColor: colors.amber, paddingLeft: space.md },
+  recent: { gap: space.sm }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  chip: { minHeight: controls.minTouch, maxWidth: '100%', paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radii.xl, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   chipText: { color: colors.muted, fontSize: 12 },
   resultsHeading: { gap: 4, marginTop: 6 }, empty: { alignItems: 'center', paddingVertical: 28 },
   footer: { gap: 12, paddingTop: 8, paddingBottom: 8 }, trust: { color: colors.muted, textAlign: 'center', fontSize: 12 },

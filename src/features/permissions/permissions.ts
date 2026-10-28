@@ -17,7 +17,7 @@ type NativeCall = 'location-module' | 'location-status' | 'location-request' | '
 
 export const initialPermissions: PermissionSnapshot = {
   location: 'undetermined', notifications: 'undetermined', coordinates: null,
-  locationMessage: 'Finding your delivery location…',
+  locationMessage: 'Device location has not been checked.',
 };
 
 export function permissionStatus(response: Pick<PermissionResponse, 'status' | 'granted' | 'canAskAgain'>): PermissionStatus {
@@ -71,14 +71,14 @@ const shouldRequest = (response: PermissionResponse, mode: RequestMode) =>
 function locationSnapshot(location: PermissionStatus): LocationSnapshot {
   return { location, coordinates: null,
     locationMessage: location === 'blocked' ? 'Location access is blocked. Enable it in Settings.'
-      : location === 'granted' ? 'Location access is enabled. Tap Update Location to find your delivery location.'
+      : location === 'granted' ? 'Location access is enabled. Tap Update Location for an optional device GPS fix.'
         : location === 'unavailable' ? 'Location is unavailable. You can still browse medicines.'
           : 'Location access is off. You can still browse medicines.' };
 }
 
 async function collectPermissions(mode: RequestMode): Promise<PermissionSnapshot> {
   if (Platform.OS === 'web') return { ...locationSnapshot('unavailable'), notifications: 'unavailable',
-    locationMessage: 'Use the Android app to set your delivery location.' };
+    locationMessage: 'Device GPS diagnostics are unavailable here. Saved delivery addresses still work.' };
   let location: PermissionStatus = 'unavailable';
   let notifications: PermissionStatus = 'unavailable';
   try {
@@ -142,7 +142,7 @@ export async function fetchDeliveryLocation(isCurrent: () => boolean = () => tru
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
       || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) throw new Error('Invalid coordinates.');
     return { location, coordinates: { latitude, longitude },
-      locationMessage: `Delivering to: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}` };
+      locationMessage: `Device GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}` };
   } catch {
     return { ...locationSnapshot(location), locationMessage: location === 'granted'
       ? 'Could not find your location. Move outdoors or tap Update Location to try again.' : locationSnapshot(location).locationMessage };

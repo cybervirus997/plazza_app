@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { AppState, Platform, type AppStateStatus } from 'react-native';
-import { fetchDeliveryLocation, initialPermissions, openPermissionSettings, readPermissions, requestInitialPermissions, requestPermissions,
+import { fetchDeliveryLocation, initialPermissions, openPermissionSettings, readPermissions, requestPermissions,
   type PermissionSnapshot, type PermissionStatus } from './permissions';
 
 interface PermissionActions {
@@ -35,6 +35,7 @@ export function PermissionProvider({ children }: PropsWithChildren) {
     let statusRevision = 0;
     let locationRevision = 0;
     let lastLocation: PermissionStatus = 'undetermined';
+    let hasObservedStatus = false;
 
     async function updateLocation() {
       if (!active || !foreground || awaitingSettings || running || locating || lastLocation !== 'granted') return;
@@ -69,17 +70,19 @@ export function PermissionProvider({ children }: PropsWithChildren) {
       setError(null);
       const revision = statusRevision;
       try {
-        const result = await (mode === 'initial' ? requestInitialPermissions()
-          : mode === 'request' ? requestPermissions() : readPermissions());
+        // Startup only observes OS status. Permission prompts belong to an explicit action.
+        const result = await (mode === 'request' ? requestPermissions() : readPermissions());
         if (!active || !foreground || revision !== statusRevision) return;
         const newlyGranted = result.location === 'granted' && lastLocation !== 'granted';
+        const acquireAfterGrant = newlyGranted && (hasObservedStatus || mode === 'request');
+        hasObservedStatus = true;
         lastLocation = result.location;
         if (result.location !== 'granted') locationRevision += 1;
         setSnapshot((previous) => result.location === 'granted' && previous.coordinates
           ? { ...result, coordinates: previous.coordinates, locationMessage: previous.locationMessage } : result);
-        // Status refreshes retain an existing fix; only a grant transition starts GPS.
+        // Retain authorized fixes. Startup never starts GPS; later grant transitions still do.
         running = false;
-        if (newlyGranted && !refreshQueued) void updateLocation();
+        if (acquireAfterGrant && !refreshQueued) void updateLocation();
       } catch {
         if (active && revision === statusRevision) {
           locationRevision += 1;
