@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { FlatList, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MedicineCard } from '../../components/MedicineCard';
 import { Button } from '../../components/ui/Button';
@@ -11,12 +11,14 @@ import { BillSummary } from './BillSummary';
 import { CouponSection } from './CouponSection';
 import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
 import { useAddressBook } from '../addresses/AddressBookProvider';
+import { unresolvedPayment } from '../../domain/payments';
 
 export default function CartScreen() {
-  const { items, itemCount, bill, checkout, checkoutState, checkoutLocked } = useShopping();
+  const { items, itemCount, bill, checkoutState, checkoutLocked, payment } = useShopping();
   const addresses = useAddressBook();
   const retry = checkoutState.status === 'error' && checkoutLocked;
   const placing = checkoutState.status === 'working';
+  const pendingPayment = unresolvedPayment(payment.attempt);
   return <SafeAreaView edges={['top', 'left', 'right']} style={ui.screen}>
     <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <FlatList data={items} keyExtractor={({ medicine }) => medicine.id}
@@ -46,16 +48,14 @@ export default function CartScreen() {
         <View style={styles.checkoutFeedback} accessibilityLiveRegion="polite">
           {checkoutState.error && <Text accessibilityRole="alert" style={styles.checkoutError}>{checkoutState.error}</Text>}
           {checkoutState.orderId && <Text style={ui.body}>Your demo order is saved on this device. No payment was taken.</Text>}
-          {retry && <Text style={ui.small}>Retry finishes the same checkout; it does not place another order.</Text>}
+          {(retry || pendingPayment) && <Text style={ui.small}>Resume the saved checkout; your reviewed details stay unchanged until it is resolved or safely cancelled.</Text>}
           {!addresses.selected && !retry && <Text style={ui.body}>Choose a delivery address before placing your demo order.</Text>}
         </View>
         <View style={styles.checkoutInner}>
           <View><Text style={ui.small}>GRAND TOTAL</Text><Text style={styles.total}>{formatMoney(bill.grandTotal)}</Text></View>
-          <View style={styles.checkoutButton}><Button label={placing ? 'Placing order…' : retry ? 'Retry checkout recovery' : 'Place Order →'}
-            disabled={placing || (!retry && (!items.length || !addresses.selected || !addresses.ready || addresses.busy))} onPress={() => {
-            Keyboard.dismiss();
-            void checkout(addresses.snapshotForOrder);
-          }} /></View>
+          <View style={styles.checkoutButton}><Button label={pendingPayment ? 'Resume saved payment' : 'Proceed to Checkout →'}
+            disabled={placing || payment.busy || (!pendingPayment && !retry && !items.length)}
+            onPress={() => router.navigate(pendingPayment ? '/payment' : '/checkout')} /></View>
         </View>
       </View>
     </KeyboardAvoidingView>

@@ -2,14 +2,14 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { Bill } from '../../domain/bill';
 import { colors, formatMoney, ui } from '../../theme/tokens';
 
-export function BillSummary({ bill }: { bill: Bill }) {
+export function BillSummary({ bill, showDeliveryPolicy = true }: { bill: Bill; showDeliveryPolicy?: boolean }) {
   return <View style={ui.card}>
     <Text accessibilityRole="header" style={ui.heading}>Bill details</Text>
     <View style={[ui.between, styles.line]}><Text style={ui.body}>Item Total</Text><Text style={styles.amount}>{formatMoney(bill.itemTotal)}</Text></View>
     <View style={[ui.between, styles.line]}><Text style={ui.body}>Discount</Text><Text style={styles.saving}>−{formatMoney(bill.discount)}</Text></View>
     <View style={[ui.between, styles.line]}><Text style={ui.body}>Delivery Fee</Text><Text style={bill.deliveryFee ? styles.amount : styles.saving}>{bill.deliveryFee ? formatMoney(bill.deliveryFee) : 'FREE'}</Text></View>
     <View style={[ui.between, styles.line, styles.total]}><Text style={styles.totalText}>Grand Total</Text><Text style={styles.totalText}>{formatMoney(bill.grandTotal)}</Text></View>
-    <Text style={ui.small}>Free delivery on item totals of ₹499 or more, before discounts.</Text>
+    {showDeliveryPolicy && <Text style={ui.small}>Free delivery on item totals of ₹499 or more, before discounts.</Text>}
   </View>;
 }
 

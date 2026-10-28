@@ -16,12 +16,13 @@ import { colors, ui } from '../../theme/tokens';
 import { DeliveryLocation, PermissionPanel } from '../permissions/PermissionPanel';
 import { useMedicineSearch } from '../search/useMedicineSearch';
 import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
+import { unresolvedPayment } from '../../domain/payments';
 
 const SUGGESTION_LIMIT = 6;
 type HomeRow = ReturnType<typeof resolveHomeSections>[number] | { kind: 'result'; id: string; medicine: Medicine };
 
 export default function HomeScreen() {
-  const { state, dispatch, catalog, catalogStatus, catalogError, repository } = useShopping();
+  const { state, dispatch, catalog, catalogStatus, catalogError, repository, payment } = useShopping();
   const searchProducts = useCallback((query: string) => repository.search({ query }), [repository]);
   const { query, search, updateQuery } = useMedicineSearch(searchProducts);
   const [mode, setMode] = useState<'suggestions' | 'results'>('suggestions');
@@ -64,9 +65,13 @@ export default function HomeScreen() {
         <View style={styles.brandMark} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={styles.brandPlus}>+</Text></View>
         <Text accessibilityRole="header" style={styles.brand}>Plazza</Text>
       </View>
-      <Text style={styles.brandTag}>YOUR EVERYDAY CARE</Text>
+      <View><Text style={styles.brandTag}>YOUR EVERYDAY CARE</Text><Button label="Orders" variant="quiet" onPress={() => router.push('/orders')} /></View>
     </View>
     <DeliveryAddressEntry />
+    {unresolvedPayment(payment.attempt) && <View style={ui.card}>
+      <Text style={ui.body}>A saved simulated payment needs your attention. No new checkout is needed.</Text>
+      <Button label="Resume saved payment" variant="secondary" onPress={() => router.push('/payment')} />
+    </View>}
     <DeliveryLocation />
     <PermissionPanel compact />
     <View style={styles.searchBox}>

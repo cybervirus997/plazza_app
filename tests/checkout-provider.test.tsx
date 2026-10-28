@@ -2,8 +2,9 @@ import { act, type ReactNode } from 'react';
 import { Alert, type PressableProps } from 'react-native';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
 import { AppStateProvider, useShopping } from '../src/state/AppStateProvider';
-import { AddressBookProvider } from '../src/features/addresses/AddressBookProvider';
+import { AddressBookProvider, useAddressBook } from '../src/features/addresses/AddressBookProvider';
 import CartScreen from '../src/features/cart/CartScreen';
+import CheckoutScreen from '../src/features/orders/CheckoutScreen';
 import { createCheckoutCoordinator, CHECKOUT_STORAGE_KEY } from '../src/features/orders/checkout';
 import { ORDER_STORAGE_KEY, createLocalOrderRepository } from '../src/repositories/local/LocalOrderRepository';
 import { createLocalAddressRepository, ADDRESS_STORAGE_KEY } from '../src/repositories/local/LocalAddressRepository';
@@ -13,7 +14,10 @@ import { createAppReducer, initialAppState } from '../src/state/appReducer';
 import { orderInput, orderStorage, deferred, testOrder } from './order-fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
-jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), push: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), push: jest.fn() }, useFocusEffect: (effect: () => (() => void) | void) => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  React.useEffect(effect, [effect]);
+} }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: { children: ReactNode }) => children }));
 jest.mock('react-native/Libraries/Components/Pressable/Pressable', () => {
@@ -33,42 +37,38 @@ function setup() {
   return { ...memory, input, identity };
 }
 type App = ReturnType<typeof setup>;
-async function mount(app: App, changedCatalog = false) {
+async function mount(app: App, changedCatalog = false, page: 'cart' | 'checkout' = 'cart') {
   const root = createRoot();
   let context: ReturnType<typeof useShopping> | undefined;
-  function Probe() { context = useShopping(); return null; }
+  let addressContext: ReturnType<typeof useAddressBook> | undefined;
+  function Probe() { context = useShopping(); addressContext = useAddressBook(); return null; }
   const products = app.input.products.map((product) => adaptMedicine(changedCatalog ? { ...product, maxQty: 1, price: 1 } : product));
   const repository = { load: async () => products, search: async () => products };
   const coordinator = createCheckoutCoordinator(app.port, { identity: app.identity });
   const addresses = createLocalAddressRepository(app.port);
   await act(async () => {
     root.render(<AppStateProvider repository={repository} storage={app.port} coordinator={coordinator}>
-      <AddressBookProvider repository={addresses}><Probe /><CartScreen /></AddressBookProvider>
+      <AddressBookProvider repository={addresses}><Probe />{page === 'cart' ? <CartScreen /> : <CheckoutScreen />}</AddressBookProvider>
     </AppStateProvider>);
   });
   const read = () => { if (!context) throw new Error('No shopping context'); return context; };
-  return { root, read, unmount: () => act(async () => { root.unmount(); }) };
+  return { root, read, submit: () => read().checkout(() => addressContext?.snapshotForOrder() ?? Promise.resolve(null)), unmount: () => act(async () => { root.unmount(); }) };
 }
 function labelled(root: Root, label: string): TestInstance {
   const nodes = root.container.queryAll((node) => node.props.accessibilityLabel === label, { matchDeepestOnly: true });
   if (nodes.length !== 1) throw new Error(`Expected one ${label}, found ${nodes.length}`);
   return nodes[0];
 }
-function press(root: Root, label: string) {
-  const fn: unknown = labelled(root, label).props.onPress;
-  if (typeof fn !== 'function') throw new Error('Missing press');
-  fn();
-}
 const shopWrites = (app: App) => jest.mocked(app.port.setItem).mock.calls.filter(([key]) => key === STORAGE_KEY);
 beforeEach(() => { jest.spyOn(Alert, 'alert').mockImplementation(() => {}); });
 afterEach(() => { jest.restoreAllMocks(); });
 
-test('Cart success publishes persisted state once, without a duplicate autosave; checkpoint restoration is compatible', async () => {
+test('provider success publishes persisted state once, without a duplicate autosave; checkpoint restoration is compatible', async () => {
   const app = setup();
   const screen = await mount(app);
   const before = shopWrites(app).length;
   try {
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().state).toMatchObject({ cart: [], activeCouponCode: null, usedCouponCodes: ['FIRST100'], lastFinalizedCheckoutId: 'checkout-1' });
     expect(screen.read().checkoutState.status).toBe('success');
     expect(shopWrites(app)).toHaveLength(before + 1);
@@ -90,10 +90,10 @@ test('double taps are blocked synchronously and cart/coupon changes stay locked 
     app.data.set(key, value);
   });
   try {
-    await act(async () => { press(screen.root, 'Place Order →'); press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); void screen.submit(); });
     await entered.promise;
     expect(screen.read().checkoutState.status).toBe('working');
-    expect(labelled(screen.root, 'Placing order…').props.accessibilityState).toMatchObject({ disabled: true });
+    expect(labelled(screen.root, 'Proceed to Checkout →').props.accessibilityState).toMatchObject({ disabled: true });
     expect(screen.read().state.usedCouponCodes).toEqual([]);
     const oldCart = screen.read().state.cart;
     await act(async () => {
@@ -109,13 +109,13 @@ test('double taps are blocked synchronously and cart/coupon changes stay locked 
   } finally { pending.resolve(); await screen.unmount(); }
 });
 
-test('missing address disables Place Order and a stale/programmatic press cannot create an order', async () => {
+test('missing address disables Checkout submission and a programmatic legacy call cannot create an order', async () => {
   const app = setup();
   app.data.delete(ADDRESS_STORAGE_KEY);
-  const screen = await mount(app);
+  const screen = await mount(app, false, 'checkout');
   try {
-    expect(labelled(screen.root, 'Place Order →').props.accessibilityState).toMatchObject({ disabled: true });
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    expect(labelled(screen.root, 'Continue to simulated payment →').props.accessibilityState).toMatchObject({ disabled: true });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().checkoutState.error).toContain('delivery address');
     expect(screen.read().state.cart).toHaveLength(2);
     expect(screen.read().state.usedCouponCodes).toEqual([]);
@@ -133,13 +133,13 @@ test('shopping finalization failure retains the cart and allows same-intent retr
     app.data.set(key, value);
   });
   try {
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().checkoutState.error).toContain('disk full');
     expect(screen.read().state.cart).toHaveLength(2);
     expect(screen.read().state.usedCouponCodes).toEqual([]);
     expect(screen.read().checkoutLocked).toBe(true);
     app.data.delete(ADDRESS_STORAGE_KEY);
-    await act(async () => { press(screen.root, 'Retry checkout recovery'); });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().state.cart).toEqual([]);
     expect(screen.read().state.usedCouponCodes).toEqual(['FIRST100']);
     expect((await createLocalOrderRepository(app.port).load()).orders).toHaveLength(1);
@@ -158,11 +158,11 @@ test('cleanup retry does not re-publish success, redeem again, or write a second
     app.data.set(key, value);
   });
   try {
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().state.cart).toEqual([]);
     expect(screen.read().checkoutState).toMatchObject({ status: 'error', orderId: 'order-1' });
-    expect(labelled(screen.root, 'Retry checkout recovery').props.accessibilityState).toMatchObject({ disabled: false });
-    await act(async () => { press(screen.root, 'Retry checkout recovery'); });
+    expect(labelled(screen.root, 'Proceed to Checkout →').props.accessibilityState).toMatchObject({ disabled: false });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().checkoutState.status).toBe('success');
     expect(Alert.alert).toHaveBeenCalledTimes(1);
     expect(shopWrites(app)).toHaveLength(before + 1);
@@ -249,7 +249,7 @@ test('checkout does not race an uncommitted cart action from the same event', as
     });
     expect(screen.read().checkoutState.error).toContain('cart update');
     expect(app.data.has(ORDER_STORAGE_KEY)).toBe(false);
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); });
     const order = (await createLocalOrderRepository(app.port).load()).orders[0];
     expect(order.items[0].quantity).toBe(1);
     expect(order.itemTotal).toBe(300);
@@ -265,7 +265,7 @@ test('a recovery-state change on an already hydrated provider publishes the reco
     app.data.set(key, value);
   });
   try {
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().state.hydrated).toBe(true);
     expect(screen.read().state.cart).toHaveLength(2);
     await act(async () => { screen.read().retryRecovery(); });
@@ -284,7 +284,7 @@ test('a lost cleanup acknowledgement retries the same finalized checkout without
     if (key === CHECKOUT_STORAGE_KEY && value.includes('"pending":null') && !failed) { failed = true; throw new Error('cleanup ack lost'); }
   });
   try {
-    await act(async () => { press(screen.root, 'Place Order →'); });
+    await act(async () => { void screen.submit(); });
     expect(screen.read().checkoutState).toMatchObject({ status: 'error', orderId: 'order-1' });
     expect(screen.read().state.cart).toEqual([]);
     const writes = jest.mocked(app.port.setItem).mock.calls.length;
