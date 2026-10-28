@@ -14,6 +14,6 @@ jest.mock('expo-notifications', () => {
 
 test('missing notification native modules do not prevent routes or permission checks from loading', async () => {
   jest.replaceProperty(Platform, 'OS', 'android');
-  expect(await readPermissions('refresh')).toMatchObject({ location: 'denied', notifications: 'unavailable', coordinates: null });
+  expect(await readPermissions()).toMatchObject({ location: 'denied', notifications: 'unavailable', coordinates: null });
   jest.restoreAllMocks();
 });

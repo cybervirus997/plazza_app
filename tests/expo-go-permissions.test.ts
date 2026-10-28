@@ -1,7 +1,7 @@
 import { isRunningInExpoGo } from 'expo';
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
-import { readPermissions } from '../src/features/permissions/permissions';
+import { readPermissions, requestPermissions } from '../src/features/permissions/permissions';
 
 const mockNotificationImport = jest.fn(() => {
   throw new Error("Cannot find native module 'ExpoTopicSubscriptionModule'");
@@ -21,7 +21,7 @@ afterEach(() => { jest.restoreAllMocks(); });
 
 test.each(['initial', 'refresh', 'request'] as const)('Android Expo Go %s never evaluates the notification package', async (mode) => {
   jest.replaceProperty(Platform, 'OS', 'android');
-  expect(await readPermissions(mode)).toMatchObject({ location: 'granted', notifications: 'unavailable' });
+  expect(await (mode === 'refresh' ? readPermissions() : requestPermissions(mode))).toMatchObject({ location: 'granted', notifications: 'unavailable' });
   expect(Location.getForegroundPermissionsAsync).toHaveBeenCalled();
   expect(mockNotificationImport).not.toHaveBeenCalled();
 });
@@ -29,6 +29,6 @@ test.each(['initial', 'refresh', 'request'] as const)('Android Expo Go %s never 
 test('a custom Android build attempts the native import and handles a missing module', async () => {
   jest.replaceProperty(Platform, 'OS', 'android');
   jest.mocked(isRunningInExpoGo).mockReturnValue(false);
-  expect(await readPermissions('refresh')).toMatchObject({ location: 'granted', notifications: 'unavailable' });
+  expect(await readPermissions()).toMatchObject({ location: 'granted', notifications: 'unavailable' });
   expect(mockNotificationImport).toHaveBeenCalledTimes(1);
 });

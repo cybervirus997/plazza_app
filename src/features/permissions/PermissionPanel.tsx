@@ -26,7 +26,9 @@ export function PermissionPanel({ compact = false }: { compact?: boolean }) {
     <View style={styles.actions}>
       {blocked && <Button label="Open Settings" variant="quiet" onPress={permissions.openSettings} />}
       {canRequest && <Button label="Enable access" variant="quiet" disabled={permissions.busy} onPress={permissions.request} />}
-      <Button label={permissions.busy ? 'Checking…' : 'Refresh'} variant="quiet" disabled={permissions.busy} onPress={permissions.refresh} />
+      <Button label={permissions.checking ? 'Checking…' : 'Refresh'} variant="quiet" disabled={permissions.checking} onPress={permissions.refresh} />
+      {permissions.location === 'granted' && <Button label={permissions.locating ? 'Updating…' : 'Update Location'}
+        variant="quiet" disabled={permissions.busy} onPress={permissions.updateLocation} />}
     </View>
   </View>;
 }

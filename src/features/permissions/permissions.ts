@@ -1,7 +1,6 @@
 import { isRunningInExpoGo, type PermissionResponse } from 'expo';
-import * as Location from 'expo-location';
 import type { NotificationPermissionsStatus } from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, Linking, Platform } from 'react-native';
 
 export type PermissionStatus = 'undetermined' | 'granted' | 'denied' | 'blocked' | 'unavailable';
 export interface PermissionSnapshot {
@@ -10,6 +9,11 @@ export interface PermissionSnapshot {
   coordinates: { latitude: number; longitude: number } | null;
   locationMessage: string;
 }
+
+type LocationSnapshot = Pick<PermissionSnapshot, 'location' | 'coordinates' | 'locationMessage'>;
+type RequestMode = 'initial' | 'refresh' | 'request';
+type NativeCall = 'location-module' | 'location-status' | 'location-request' | 'services' | 'position'
+  | 'notification-module' | 'notification-status' | 'notification-request' | 'channel' | 'settings';
 
 export const initialPermissions: PermissionSnapshot = {
   location: 'undetermined', notifications: 'undetermined', coordinates: null,
@@ -27,71 +31,132 @@ function notificationStatus(response: NotificationPermissionsStatus, grantedIosS
   return permissionStatus(response);
 }
 
-type RequestMode = 'initial' | 'refresh' | 'request';
-const shouldRequest = (response: PermissionResponse, mode: RequestMode) =>
-  response.canAskAgain && !response.granted && (mode === 'request' || (mode === 'initial' && response.status === 'undetermined'));
+// A timeout stops waiting, not the native operation. Keep its lock until it settles.
+const pendingCalls = new Map<NativeCall, Promise<unknown>>();
+async function nativeCall<T>(key: NativeCall, call: () => Promise<T>, requireFresh = false): Promise<T> {
+  const prompt = key === 'location-request' || key === 'notification-request';
+  let pending = pendingCalls.get(key) as Promise<T> | undefined;
+  if (pending && requireFresh) {
+    // A Settings return must not adopt a status read started before the change.
+    await withDeadline(pending, 8000);
+    pending = pendingCalls.get(key) as Promise<T> | undefined;
+  }
+  if (!pending) {
+    if (prompt && (pendingCalls.has('location-request') || pendingCalls.has('notification-request'))) {
+      throw new Error('A permission prompt is still open.');
+    }
+    pending = Promise.resolve().then(call);
+    pendingCalls.set(key, pending);
+    const release = () => { pendingCalls.delete(key); };
+    void pending.then(release, release);
+  }
+  return withDeadline(pending, prompt ? 30000 : 8000);
+}
 
-async function getCoordinates(): Promise<NonNullable<PermissionSnapshot['coordinates']>> {
+async function withDeadline<T>(pending: Promise<T>, timeout: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const location = await Promise.race([
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
-      new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error('Location timed out')), 8000);
-      }),
-    ]);
-    return { latitude: location.coords.latitude, longitude: location.coords.longitude };
+    return await Promise.race([pending, new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => reject(new Error('Native operation timed out.')), timeout);
+    })]);
   } finally { clearTimeout(timer); }
 }
 
-export async function readPermissions(mode: RequestMode): Promise<PermissionSnapshot> {
-  if (Platform.OS === 'web') return {
-    location: 'unavailable', notifications: 'unavailable', coordinates: null,
-    locationMessage: 'Use the Android app to set your delivery location.',
-  };
-  let location: PermissionStatus = 'unavailable';
-  let notifications: PermissionStatus = 'unavailable';
-  // Permission failures are isolated: a failed location request must not skip notifications.
-  try {
-    let response = await Location.getForegroundPermissionsAsync();
-    if (shouldRequest(response, mode)) response = await Location.requestForegroundPermissionsAsync();
-    location = permissionStatus(response);
-  } catch { /* The unavailable status is visible in the permission panel. */ }
-  // Expo Go lacks the topic module loaded by SDK 58's notifications entry point.
-  // Detect it before import; custom development clients still use native permissions.
-  if (Platform.OS !== 'android' || !isRunningInExpoGo()) {
-    try {
-      const notificationsApi = await import('expo-notifications');
-      if (Platform.OS === 'android') {
-        await notificationsApi.setNotificationChannelAsync('orders', {
-          name: 'Order updates', importance: notificationsApi.AndroidImportance.DEFAULT,
-        });
-      }
-      let response = await notificationsApi.getPermissionsAsync();
-      if (shouldRequest(response, mode)) response = await notificationsApi.requestPermissionsAsync();
-      notifications = notificationStatus(response, [notificationsApi.IosAuthorizationStatus.AUTHORIZED,
-        notificationsApi.IosAuthorizationStatus.PROVISIONAL, notificationsApi.IosAuthorizationStatus.EPHEMERAL]);
-    } catch { /* Shopping remains available without notification permission. */ }
-  }
+const locationApi = () => nativeCall('location-module', () => import('expo-location'));
+const isActive = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+const shouldRequest = (response: PermissionResponse, mode: RequestMode) =>
+  isActive() && response.canAskAgain && !response.granted
+  && (mode === 'request' || (mode === 'initial' && response.status === 'undetermined'));
 
-  let coordinates: PermissionSnapshot['coordinates'] = null;
-  let locationMessage = location === 'blocked' ? 'Location access is blocked. Enable it in Settings.'
-    : location === 'unavailable' ? 'Location is unavailable. You can still browse medicines.'
-      : 'Location access is off. You can still browse medicines.';
-  if (location === 'granted') {
-    try {
-      if (await Location.hasServicesEnabledAsync()) {
-        coordinates = await getCoordinates();
-        locationMessage = `Delivering to: ${coordinates.latitude.toFixed(4)}, ${coordinates.longitude.toFixed(4)}`;
-      } else locationMessage = 'Location services are off. Turn on GPS and refresh.';
-    } catch { locationMessage = 'Could not find your location. Move outdoors or refresh to try again.'; }
-  }
-  return { location, notifications, coordinates, locationMessage };
+function locationSnapshot(location: PermissionStatus): LocationSnapshot {
+  return { location, coordinates: null,
+    locationMessage: location === 'blocked' ? 'Location access is blocked. Enable it in Settings.'
+      : location === 'granted' ? 'Location access is enabled. Tap Update Location to find your delivery location.'
+        : location === 'unavailable' ? 'Location is unavailable. You can still browse medicines.'
+          : 'Location access is off. You can still browse medicines.' };
 }
 
-// One native prompt sequence per JS session, including React development remounts.
-let firstLaunch: Promise<PermissionSnapshot> | undefined;
+async function collectPermissions(mode: RequestMode): Promise<PermissionSnapshot> {
+  if (Platform.OS === 'web') return { ...locationSnapshot('unavailable'), notifications: 'unavailable',
+    locationMessage: 'Use the Android app to set your delivery location.' };
+  let location: PermissionStatus = 'unavailable';
+  let notifications: PermissionStatus = 'unavailable';
+  try {
+    const api = await locationApi();
+    let response = await nativeCall('location-status', () => api.getForegroundPermissionsAsync(), mode === 'refresh');
+    if (shouldRequest(response, mode)) response = await nativeCall('location-request', () => api.requestForegroundPermissionsAsync());
+    location = permissionStatus(response);
+  } catch { /* A missing or failed native module remains explicitly unavailable. */ }
+  // Expo Go must be detected before evaluating the notifications entry point.
+  if (Platform.OS !== 'android' || !isRunningInExpoGo()) {
+    try {
+      const api = await nativeCall('notification-module', () => import('expo-notifications'));
+      if (Platform.OS === 'android' && mode !== 'refresh') {
+        await nativeCall('channel', () => api.setNotificationChannelAsync('orders', {
+          name: 'Order updates', importance: api.AndroidImportance.DEFAULT,
+        }));
+      }
+      let response = await nativeCall('notification-status', () => api.getPermissionsAsync(), mode === 'refresh');
+      if (shouldRequest(response, mode)) response = await nativeCall('notification-request', () => api.requestPermissionsAsync());
+      notifications = notificationStatus(response, [api.IosAuthorizationStatus.AUTHORIZED,
+        api.IosAuthorizationStatus.PROVISIONAL, api.IosAuthorizationStatus.EPHEMERAL]);
+    } catch { /* A location failure must not prevent the notification check. */ }
+  }
+  return { ...locationSnapshot(location), notifications };
+}
+
+export function readPermissions(): Promise<PermissionSnapshot> {
+  return collectPermissions('refresh');
+}
+
+export function requestPermissions(mode: 'initial' | 'request' = 'request'): Promise<PermissionSnapshot> {
+  return collectPermissions(mode);
+}
+
+export function openPermissionSettings(): Promise<void> {
+  return nativeCall('settings', () => Linking.openSettings());
+}
+
+export async function fetchDeliveryLocation(isCurrent: () => boolean = () => true): Promise<LocationSnapshot> {
+  if (Platform.OS === 'web') return locationSnapshot('unavailable');
+  let location: PermissionStatus = 'unavailable';
+  try {
+    const api = await locationApi();
+    location = permissionStatus(await nativeCall('location-status', () => api.getForegroundPermissionsAsync(), true));
+    if (location !== 'granted') return locationSnapshot(location);
+    if (!isCurrent() || !isActive()) return locationSnapshot(location);
+    if (!await nativeCall('services', () => api.hasServicesEnabledAsync())) {
+      return { ...locationSnapshot(location), locationMessage: 'Location services are off. Turn on GPS and tap Update Location.' };
+    }
+    if (!isCurrent() || !isActive()) return locationSnapshot(location);
+    location = permissionStatus(await nativeCall('location-status', () => api.getForegroundPermissionsAsync(), true));
+    if (location !== 'granted' || !isCurrent() || !isActive()) return locationSnapshot(location);
+    if (pendingCalls.has('position')) return { ...locationSnapshot(location),
+      locationMessage: 'The previous location request is still finishing. Try Update Location again shortly.' };
+    const result = await nativeCall('position', () => api.getCurrentPositionAsync({ accuracy: api.Accuracy.Balanced }));
+    if (!isCurrent() || !isActive()) return locationSnapshot(location);
+    // Permission may have changed while Android was acquiring the fix.
+    location = permissionStatus(await nativeCall('location-status', () => api.getForegroundPermissionsAsync(), true));
+    if (location !== 'granted') return locationSnapshot(location);
+    const { latitude, longitude } = result.coords;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)
+      || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) throw new Error('Invalid coordinates.');
+    return { location, coordinates: { latitude, longitude },
+      locationMessage: `Delivering to: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}` };
+  } catch {
+    return { ...locationSnapshot(location), locationMessage: location === 'granted'
+      ? 'Could not find your location. Move outdoors or tap Update Location to try again.' : locationSnapshot(location).locationMessage };
+  }
+}
+
+// Share only the pending first prompt sequence; remounts must read fresh OS state.
+let initialRequest: Promise<PermissionSnapshot> | undefined;
+let initialRequested = false;
 export function requestInitialPermissions(): Promise<PermissionSnapshot> {
-  firstLaunch ??= readPermissions('initial');
-  return firstLaunch;
+  if (initialRequest) return initialRequest;
+  if (initialRequested) return readPermissions();
+  initialRequested = true;
+  initialRequest = requestPermissions('initial');
+  void initialRequest.then(() => { initialRequest = undefined; }, () => { initialRequest = undefined; });
+  return initialRequest;
 }
