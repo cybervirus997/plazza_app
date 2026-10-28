@@ -2,7 +2,7 @@
 
 Expo SDK 58, React Native 0.88, React 19.3, strict TypeScript, and Expo Router. Android 13+ is the intended demo platform. The installed Expo and React Native versions are preserved.
 
-**Demo catalog available:** `src/data/catalog.json` contains the user's 15 PDF-derived demo records. This is a temporary substitute, not the assignment's original attached catalog. The original-catalog submission requirement remains unresolved. The last EAS check reported no login, and physical-device verification is outstanding.
+**Demo catalog available:** `src/data/catalog.json` contains the user's 15 PDF-derived demo records. This is a temporary substitute, not the assignment's original attached catalog. The original-catalog submission requirement remains unresolved. APK builds and physical-device verification are deferred.
 
 ## Run
 
@@ -32,7 +32,13 @@ npx expo-doctor
 npm run bundle:android        # Hermes JavaScript export, not an APK
 ```
 
-Latest stabilization: **124 tests across 13 suites passed**, with clean TypeScript/lint, passing demo preflight, required catalog preparation, dependency compatibility, and Android Hermes export. The exported bundle contains all 15 medicine names. A component integration test verifies name/salt search, rendered cards, Add, and shared Home/Cart quantities using mocked native surfaces. Visual and physical-device QA remain unverified. See [NOTES.md](NOTES.md).
+Latest discovery pass: **144 tests across 16 suites passed**, with clean TypeScript/lint, passing demo preflight, required catalog preparation, dependency compatibility, and Expo Doctor **20/20**. Web server/client export passed. Renderer tests cover discovery, autocomplete, selection, name/salt search, Add, and shared Home/Browse/Cart quantities using mocked native surfaces. Browser visual and physical-device QA remain unverified. See [NOTES.md](NOTES.md) and the full [requirements audit](docs/REQUIREMENTS_AUDIT.md).
+
+## Discover medicines
+
+Home shows four real catalog medicines before typing and a **Browse all medicines** action. Typing shows up to six suggestions with ingredient, price, and Rx information. Select a suggestion to view that medicine, submit to show all matches on Home, or choose **View all matching medicines** to open the filtered Browse screen. Only committed searches enter recent history; clearing the input returns to discovery.
+
+Browse lists all 15 supplied medicines and offers the same name/ingredient filtering, shared Add/quantity controls, Home back navigation, and a Cart shortcut. It is a stack screen at `/browse`; the only bottom tabs remain Home and Cart.
 
 ## Build APKs with EAS
 
@@ -56,6 +62,7 @@ Download the actual completed build from the URL EAS prints. Install directly on
 ## Code map
 
 - `src/app/(tabs)` — exactly Home and Cart; route files re-export screens.
+- `src/app/browse.tsx` — Browse stack route outside the tabs.
 - `src/domain` — immutable cart operations, search, coupon registry, and bills.
 - `src/state` — shared reducer/context and native notices.
 - `src/storage` — versioned snapshot validation and serialized writes.

@@ -12,7 +12,7 @@ Prices are per unit in INR. Item totals sum integer paise. Percentage discounts 
 
 Expo **58.0.20**, React Native **0.88.0**, React **19.3.0**, strict TypeScript, Expo Router, npm, and `package-lock.json` are preserved. No native directories were hand-written.
 
-`src/app` contains only layouts and tiny Home/Cart route exports. `src/features` holds search, cart, and permissions. `src/domain` holds pure types, cart operations, search, coupon rules, and bills. `src/state` holds the reducer/Context and native notice delivery. `src/storage` owns snapshot validation and ordered I/O. `src/components` and `src/theme` provide shared UI and design tokens.
+`src/app` contains only layouts and tiny Home/Cart/Browse route exports. Browse is a root-stack screen outside the two bottom tabs. `src/features` holds search, cart, and permissions. `src/domain` holds pure types, cart operations, search, coupon rules, and bills. `src/state` holds the reducer/Context and native notice delivery. `src/storage` owns snapshot validation and ordered I/O. `src/components` and `src/theme` provide shared UI and design tokens.
 
 The user's pre-existing starter Home edit was copied byte-for-byte to `docs/starter-home.tsx.txt` before replacing its route. Obsolete starter routes/components/styles/reset tooling were removed, including two starter files that failed type/lint validation. The preserved archive is documentation, outside Router and compilation. Original unused image assets were not broadly deleted. New launcher assets use an original geometric plus mark, generated locally with Node built-ins by `scripts/generate-icons.cjs`.
 
@@ -42,9 +42,11 @@ Every cart-changing action revalidates the coupon. Valid coupons remain; invalid
 
 ## 6. Search and mobile UI
 
-Local search matches partial name/salt text, case-insensitively, trimming surrounding whitespace. A documented **250ms debounce/demo delay** makes loading observable without fabricating an HTTP request. Cleanup prevents stale results from replacing a new query. Empty, loading, results, no-results, and error states are implemented.
+Local search matches partial name/salt text, case-insensitively, trimming surrounding whitespace. One **150ms debounce** makes typing responsive and loading observable without fabricating an HTTP request. Request IDs invalidate pending results immediately on input changes; effect cleanup also cancels timers/unmounted updates. Empty, loading, results, no-results, and error states are implemented. Browse filters the same small catalog directly with the canonical domain function and adds no competing debounce.
 
-Only submission or a recent-search tap changes history. Case-insensitive duplicates move to the front; five queries are retained. Home/results and Cart use FlatList and shared medicine/quantity components. Buttons have accessible labels, disabled states, and at least 44px targets; layouts wrap on narrow screens and retain native font scaling. Cart uses keyboard avoidance, scrolling content, and a separate checkout bar. Visual, keyboard, and TalkBack behavior is still unverified on hardware.
+Only committed searches (submission, suggestion selection, View All, or a recent-search tap) change history. Case-insensitive duplicates move to the front; five queries are retained. Home previews four actual medicines before typing, shows up to six suggestions while typing, and reveals the selected medicine or full matching results on commitment. View All routes the query to Browse; clearing restores discovery. Browse lists the full catalog without typing. Home, Browse, and Cart share MedicineCard/QuantityControl and one cart state.
+
+Buttons have accessible labels, disabled states, and at least 44px targets; layouts wrap on narrow screens and retain native font scaling. The permission debug panel is compact in Home's header, with wrapping status/actions. Search content stays in normal list flow rather than an overlapping popup; the input is kept in a stable position in the list header while typing, and handled keyboard taps make suggestion selection functional. Cart uses keyboard avoidance, scrolling content, and a separate checkout bar. Coupon failures/auto-removal now appear beside the form as well as the shared banner, so feedback is available after scrolling. Visual, keyboard, and TalkBack behavior still requires hardware checks.
 
 ## 7. Android permission lifecycle
 
@@ -105,7 +107,7 @@ Actual review fixes included zero-valued delivery semantics; saved-quantity sani
 
 Ponytail was checked through available tools, local plugin files, and plugin search. No capability was found. **Ponytail itself was not run.** Codex manually reviewed correctness, duplicate/dead code, unnecessary packages, unsafe types, boundary coverage, state synchronization, storage ordering, and accessibility. No app `any`, ignored TypeScript errors, lint-disable comments, snapshot tests, Redux, React Query, Formik, app-level Zod, or UI framework were introduced.
 
-New runtime packages: AsyncStorage, Expo Location, Expo Notifications, Expo Dev Client. Development packages supply required Jest/lint tooling and the dynamic-import test transform. Existing starter dependencies were preserved rather than broadly pruned.
+Initial runtime additions were AsyncStorage, Expo Location, Expo Notifications, and Expo Dev Client. Development packages supply required Jest/lint tooling and the dynamic-import test transform. The later discovery pass removed only three proven-unused starter dependencies, as detailed below; no package upgrades were needed.
 
 Milestone commits: `57d9bfe` configuration, `a60dcb1` domain/persistence/tests, `c977d91` UI/permissions, and `cd559b5` native-module fallback/build-input review fixes. The documentation commit follows. No push or history rewrite occurred.
 
@@ -147,3 +149,32 @@ Root causes: the original catalog was absent and the generated import had no med
 - A renderer integration test exercises the actual Home/Cart components, search hook, catalog, reducer, and AppStateProvider. It verifies result cards, enabled Add, name/salt searching, and synchronized Add/increment quantities. Native surfaces are mocked; this is not Android runtime verification.
 
 Physical-device Expo Go startup, custom-APK channel/permission behavior, true blocked states, Settings return, and restart persistence still require the device checklist. EAS login/project linking/signing/build completion remain external steps. The 15 PDF-derived records are temporary demo data; the unchanged original attached catalog remains required for final assignment submission.
+
+## Discovery, autocomplete, and compliance pass · 28 October 2026
+
+The user requested an in-place discovery/quality pass, a truthful assignment audit, proven-safe cleanup, and Ponytail review if available, explicitly deferring EAS/Gradle/device work. Codex retained the architecture and used focused agents for Browse, cart UX regressions, search-race tests, and independent requirements/source review. The parent implemented Home, reviewed the combined diff, ran final checks, and documented the results. No human review or device verification is claimed.
+
+Before this pass, Home required a query and offered no way to browse the whole catalog. It now previews four real products, offers Browse all medicines, and displays at most six selectable suggestions using the same canonical name/salt filter as full results and Browse. No popularity/stock metrics, remote requests, images, medical recommendations, or hardcoded product-card data were added. Catalog order remains deterministic; prefix ranking was deliberately omitted for this small data set. A selected medicine is resolved by ID, while recent history records its name. Already loaded search results are reused on submission; explicit recent taps/retries can rerun a query.
+
+Reused abstractions: MedicineCard (with an optional accessible select action), QuantityControl, Button, shared tokens, catalogData/searchMedicines, Context/reducer, and versioned persistence. No second repository, cart state, design system, or heavy search infrastructure was introduced. The correct coupon engine, bill calculations, providers, hydration/write queue, and Expo Go native-import guard have no source changes in this pass. Cart feedback and wrapping changed only presentation.
+
+Cleanup evidence: no source module, user archive, image asset, or configuration file was deleted. The oversized old Home promotion/illustration JSX and now-unused local styles were replaced by actionable discovery UI. `expo-device`, `expo-image`, and `expo-web-browser` had no application, script, config, test, dynamic-route, installed dependency, or peer consumers. They were removed with npm; the orphan `ua-parser-js` left the lockfile too. Router/native peers were retained and the lockfile contains no unrelated upgrades. The user's pre-existing `app.json` EAS-linking edit was left untouched and unstaged.
+
+Ponytail tools/skills were absent and plugin search returned no match. **Ponytail did not run.** The equivalent manual audit checked source/diffs, duplicate filtering/state, unsafe types, dependency consumers, boundary tests, pending-search races, shared quantities, coupon eligibility, persistence guards, keyboard flow, and accessible labels. Findings fixed were a small stale-response window at input-change time, discovery dead ends, coupon feedback outside the scrolled form, and narrow-screen status/bill wrapping. Required native fallbacks and correctness guards were retained.
+
+Fresh verification after the UX/review fixes:
+
+- `npm run check`: **144 tests across 16 suites passed**, zero failed tests/snapshots; TypeScript and lint clean.
+- Home: seven renderer tests cover discovery, capped suggestions/selection/history, View All/submission, clear/no matches, three-screen quantities, and explicit catalog failure.
+- Browse: four renderer tests cover all 15 discoverable entries, name/salt filter/clear, Add/maxQty, back fallback, and explicit catalog failure.
+- Search hook: seven deterministic tests cover one 150ms debounce, old-result races including same-event resolution, clearing, no-results, and error/retry. Canonical filtering also has an immutable/deterministic-input regression.
+- Cart: two new renderer tests cover inline invalid/success feedback, coupon auto-removal, and recalculated bills. All existing cart/coupon/persistence/permission tests still pass.
+- `npm run check:demo` and `npm run prepare:catalog -- --required`: passed. The preflight's ADB availability warning was sandbox-related, not a device test.
+- Online Expo compatibility check: passed. Expo Doctor: **20/20 passed**. Active Node **24.22.1**, Expo **58.0.20**, React Native **0.88.0**, React **19.3.0**, TypeScript **6.0.3**.
+- Web server/client JavaScript export passed into `/tmp/plazza-discovery-web`, including the Browse route; this is packaging evidence, not native/visual verification.
+- Browser visual QA was retried but failed before navigation with the same browser-runtime `node:process` import restriction. No screenshots or visual verification are claimed.
+- Supplied catalog checksum remains unchanged. No EAS build, Gradle command, signing change, or physical-device verification was performed.
+
+The full [REQUIREMENTS_AUDIT.md](docs/REQUIREMENTS_AUDIT.md) covers all **67 requirements**: **50 VERIFIED**, **14 IMPLEMENTED-NOT-DEVICE-TESTED**, **2 BLOCKED**, **1 MISSING**, **0 FAILING**. Renderer/native-mock evidence is explicitly bounded. Missing original catalog provenance, an actual Debug APK, and real Android permission/Settings/restart/accessibility checks remain open or deferred. The current catalog is still the authorized 15-record PDF-derived substitute.
+
+Local commits for this pass: `ac261c9` dependency cleanup, `e07bde3` Home/autocomplete/Browse, `4288de0` inline coupon feedback/bill wrapping, and the compact-header refinement, followed by the final documentation/audit commit. Nothing was pushed or rebased.
