@@ -17,6 +17,7 @@ import { DeliveryLocation, PermissionPanel } from '../permissions/PermissionPane
 import { useMedicineSearch } from '../search/useMedicineSearch';
 import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
 import { unresolvedPayment } from '../../domain/payments';
+import { openOrders, openPayment } from '../../navigation/commerceNavigation';
 
 const SUGGESTION_LIMIT = 6;
 type HomeRow = ReturnType<typeof resolveHomeSections>[number] | { kind: 'result'; id: string; medicine: Medicine };
@@ -65,12 +66,12 @@ export default function HomeScreen() {
         <View style={styles.brandMark} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={styles.brandPlus}>+</Text></View>
         <Text accessibilityRole="header" style={styles.brand}>Plazza</Text>
       </View>
-      <View><Text style={styles.brandTag}>YOUR EVERYDAY CARE</Text><Button label="Orders" variant="quiet" onPress={() => router.push('/orders')} /></View>
+      <View><Text style={styles.brandTag}>YOUR EVERYDAY CARE</Text><Button label="Orders" variant="quiet" onPress={openOrders} /></View>
     </View>
     <DeliveryAddressEntry />
     {unresolvedPayment(payment.attempt) && <View style={ui.card}>
       <Text style={ui.body}>A saved simulated payment needs your attention. No new checkout is needed.</Text>
-      <Button label="Resume saved payment" variant="secondary" onPress={() => router.push('/payment')} />
+      <Button label="Resume saved payment" variant="secondary" onPress={openPayment} />
     </View>}
     <DeliveryLocation />
     <PermissionPanel compact />

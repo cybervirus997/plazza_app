@@ -1,6 +1,6 @@
 import { act, type ReactNode, useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { Alert, type PressableProps } from 'react-native';
+import { Alert, Platform, type PressableProps } from 'react-native';
 import { createRoot, type Root, type TestInstance, type TestNode } from 'test-renderer';
 import { AppStateProvider, useShopping } from '../src/state/AppStateProvider';
 import { AddressBookProvider, useAddressBook } from '../src/features/addresses/AddressBookProvider';
@@ -11,6 +11,7 @@ import { PAYMENT_STORAGE_KEY } from '../src/repositories/local/LocalPaymentRepos
 import { STORAGE_KEY } from '../src/storage/persistence';
 import CartScreen from '../src/features/cart/CartScreen';
 import CheckoutScreen from '../src/features/orders/CheckoutScreen';
+import { CheckoutPreferencesProvider } from '../src/features/orders/CheckoutPreferences';
 import PaymentScreen from '../src/features/orders/PaymentScreen';
 import OrderConfirmationScreen from '../src/features/orders/OrderConfirmationScreen';
 import OrderHistoryScreen from '../src/features/orders/OrderHistoryScreen';
@@ -25,7 +26,7 @@ let mockParams: { id?: string } = {};
 let mockNavigate: (href: Href) => void = () => {};
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn((href: Href) => mockNavigate(href)), replace: jest.fn((href: Href) => mockNavigate(href)), navigate: jest.fn((href: Href) => mockNavigate(href)),
+  router: { dismissTo: jest.fn((href: Href) => mockNavigate(href)), push: jest.fn((href: Href) => mockNavigate(href)), replace: jest.fn((href: Href) => mockNavigate(href)), navigate: jest.fn((href: Href) => mockNavigate(href)),
     canGoBack: () => true, back: jest.fn(() => mockNavigate('/cart')) },
   useLocalSearchParams: () => mockParams,
   useFocusEffect: (effect: () => (() => void) | void) => {
@@ -33,6 +34,10 @@ jest.mock('expo-router', () => ({
     React.useEffect(effect, [effect]);
   },
 }));
+jest.mock('react-native/Libraries/Components/Keyboard/KeyboardAvoidingView', () => {
+  const React = jest.requireActual<typeof import('react')>('react');
+  return { __esModule: true, default: (props: { children: ReactNode }) => React.createElement('KeyboardAvoidingView', props, props.children) };
+});
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: { children: ReactNode }) => children }));
 jest.mock('../src/features/permissions/PermissionPanel', () => ({ DeliveryLocation: () => null, PermissionPanel: () => null }));
@@ -70,7 +75,7 @@ async function mount(app = paymentSetup(), initial = '/checkout', params: { id?:
   }
   const repository = { load: async () => app.start.products, search: async () => app.start.products };
   await act(async () => { root.render(<AppStateProvider storage={app.port} ordering={app.service} repository={repository}>
-    <AddressBookProvider repository={createLocalAddressRepository(app.port)}><Probe /><Navigator /></AddressBookProvider>
+    <AddressBookProvider repository={createLocalAddressRepository(app.port)}><CheckoutPreferencesProvider><Probe /><Navigator /></CheckoutPreferencesProvider></AddressBookProvider>
   </AppStateProvider>); });
   const read = () => { if (!shopping || !addresses) throw new Error('Missing contexts'); return { shopping, addresses }; };
   return { app, root, read, route: () => route, text: () => content(root.container),
@@ -320,5 +325,31 @@ test('a saved receipt without successful shopping finalization cannot show confi
     expect(screen.text()).not.toContain('Your mock order is saved');
     expect(screen.text()).toContain('cannot be confirmed');
     expect(screen.read().shopping.state.cart).toHaveLength(2);
+  } finally { await screen.unmount(); }
+});
+
+test('Edit Cart returns to the existing tab and keeps Checkout method and delivery choices', async () => {
+  const screen = await mount();
+  try {
+    await screen.tap('Scheduled · evening demo window');
+    await screen.tap('Mock Cash on Delivery');
+    await screen.tap('Edit Cart');
+    expect(router.dismissTo).toHaveBeenCalledWith('/cart');
+    expect(screen.route()).toBe('/cart');
+    await screen.tap('Proceed to Checkout →');
+    expect(screen.text()).toContain('✓ Scheduled · evening demo window');
+    expect(screen.text()).toContain('✓ Mock Cash on Delivery');
+    await screen.tap('Continue to simulated payment →');
+    expect(screen.read().shopping.payment.attempt).toMatchObject({ method: 'cod', order: { deliveryPreference: 'scheduled' } });
+  } finally { await screen.unmount(); }
+});
+test('Android Cart relies on native resize without a second keyboard height adjustment', async () => {
+  jest.replaceProperty(Platform, 'OS', 'android');
+  const screen = await mount(paymentSetup(), '/cart');
+  try {
+    const avoidance = screen.root.container.queryAll((node) => node.type === 'KeyboardAvoidingView');
+    expect(avoidance).toHaveLength(1);
+    expect(avoidance[0].props.enabled).toBe(false);
+    expect(avoidance[0].props.behavior).toBeUndefined();
   } finally { await screen.unmount(); }
 });

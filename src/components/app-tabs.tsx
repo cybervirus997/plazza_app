@@ -9,6 +9,7 @@ export default function AppTabs() {
   return (
     <Tabs screenOptions={{
       headerShown: false,
+      animation: 'none',
       tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: colors.muted,
       tabBarHideOnKeyboard: true,

@@ -5,6 +5,7 @@ import { AppStateProvider, useShopping } from '../src/state/AppStateProvider';
 import { AddressBookProvider, useAddressBook } from '../src/features/addresses/AddressBookProvider';
 import CartScreen from '../src/features/cart/CartScreen';
 import CheckoutScreen from '../src/features/orders/CheckoutScreen';
+import { CheckoutPreferencesProvider } from '../src/features/orders/CheckoutPreferences';
 import { createCheckoutCoordinator, CHECKOUT_STORAGE_KEY } from '../src/features/orders/checkout';
 import { ORDER_STORAGE_KEY, createLocalOrderRepository } from '../src/repositories/local/LocalOrderRepository';
 import { createLocalAddressRepository, ADDRESS_STORAGE_KEY } from '../src/repositories/local/LocalAddressRepository';
@@ -14,7 +15,7 @@ import { createAppReducer, initialAppState } from '../src/state/appReducer';
 import { orderInput, orderStorage, deferred, testOrder } from './order-fixtures';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
-jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), push: jest.fn() }, useFocusEffect: (effect: () => (() => void) | void) => {
+jest.mock('expo-router', () => ({ router: { navigate: jest.fn(), push: jest.fn(), dismissTo: jest.fn(), replace: jest.fn() }, useFocusEffect: (effect: () => (() => void) | void) => {
   const React = jest.requireActual<typeof import('react')>('react');
   React.useEffect(effect, [effect]);
 } }));
@@ -48,7 +49,7 @@ async function mount(app: App, changedCatalog = false, page: 'cart' | 'checkout'
   const addresses = createLocalAddressRepository(app.port);
   await act(async () => {
     root.render(<AppStateProvider repository={repository} storage={app.port} coordinator={coordinator}>
-      <AddressBookProvider repository={addresses}><Probe />{page === 'cart' ? <CartScreen /> : <CheckoutScreen />}</AddressBookProvider>
+      <AddressBookProvider repository={addresses}><CheckoutPreferencesProvider><Probe />{page === 'cart' ? <CartScreen /> : <CheckoutScreen />}</CheckoutPreferencesProvider></AddressBookProvider>
     </AppStateProvider>);
   });
   const read = () => { if (!context) throw new Error('No shopping context'); return context; };

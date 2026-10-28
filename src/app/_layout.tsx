@@ -7,10 +7,15 @@ import { PermissionProvider } from '../features/permissions/PermissionProvider';
 import { AddressBookProvider } from '../features/addresses/AddressBookProvider';
 import { AppStateProvider, useShopping } from '../state/AppStateProvider';
 import { colors, ui } from '../theme/tokens';
+import { stackOptions, quietStackOptions, returningScreenOptions } from '../navigation/commerceNavigation';
+import { useReducedMotion } from '../hooks/useReducedMotion';
+import { CheckoutPreferencesProvider } from '../features/orders/CheckoutPreferences';
 
 export { ErrorBoundary } from 'expo-router';
+export const unstable_settings = { anchor: '(tabs)' };
 
 function Routes() {
+  const reducedMotion = useReducedMotion();
   const { state, checkoutState, retryRecovery } = useShopping();
   if (!state.hydrated) return <View style={[ui.screen, { alignItems: 'center', justifyContent: 'center' }]}>
     {checkoutState.error ? <View style={ui.content}>
@@ -20,7 +25,11 @@ function Routes() {
       <Button label="Retry checkout recovery" onPress={retryRecovery} />
     </View> : <ActivityIndicator accessibilityLabel="Restoring your shopping bag" color={colors.primary} size="large" />}
   </View>;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={reducedMotion ? quietStackOptions : stackOptions}>
+    <Stack.Screen name="(tabs)" options={returningScreenOptions} />
+    <Stack.Screen name="checkout" options={returningScreenOptions} />
+    <Stack.Screen name="orders/index" options={returningScreenOptions} />
+  </Stack>;
 }
 
 export default function RootLayout() {
@@ -31,7 +40,7 @@ export default function RootLayout() {
           <AddressBookProvider>
             <PermissionProvider>
               <StatusBar style="dark" />
-              <Routes />
+              <CheckoutPreferencesProvider><Routes /></CheckoutPreferencesProvider>
             </PermissionProvider>
           </AddressBookProvider>
         </AppStateProvider>

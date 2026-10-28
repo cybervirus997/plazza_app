@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import { colors, ui } from '../../theme/tokens';
 import { OrderItem } from './OrderItems';
 import { OrderIdentity, OrderReceiptFooter } from './OrderReceipt';
 import { useOrderById } from './useOrders';
+import { backTo, openPayment } from '../../navigation/commerceNavigation';
 
 export default function OrderDetailsScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -17,12 +18,12 @@ export default function OrderDetailsScreen() {
   return <SafeAreaView style={ui.screen}>
     <FlatList data={order?.items ?? []} keyExtractor={(item) => item.productId} contentContainerStyle={ui.content}
       ListHeaderComponent={<View style={{ gap: 14 }}>
-        <Button label="← Orders" variant="quiet" onPress={() => router.replace('/orders')} />
+        <Button label="← Back" accessibilityLabel="Back from receipt" variant="quiet" onPress={() => backTo('/orders')} />
         <Text style={ui.label}>PURCHASE-TIME SNAPSHOT</Text><Text accessibilityRole="header" style={ui.title}>Order receipt</Text>
         {order && <OrderIdentity order={order} reconciling={payment.attempt?.order.id === order.id && !payment.attempt.finalized} />}
         {order && payment.attempt?.order.id === order.id && !payment.attempt.finalized && <>
           <Text accessibilityRole="alert" style={ui.body}>This receipt is saved, but checkout reconciliation must finish before order confirmation.</Text>
-          <Button label="Resolve saved checkout" onPress={() => router.replace('/payment')} />
+          <Button label="Resolve saved checkout" onPress={openPayment} />
         </>}
       </View>}
       renderItem={({ item }) => <OrderItem item={item} />}

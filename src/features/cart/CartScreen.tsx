@@ -12,6 +12,7 @@ import { CouponSection } from './CouponSection';
 import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
 import { useAddressBook } from '../addresses/AddressBookProvider';
 import { unresolvedPayment } from '../../domain/payments';
+import { returnToShop } from '../../navigation/commerceNavigation';
 
 export default function CartScreen() {
   const { items, itemCount, bill, checkoutState, checkoutLocked, payment } = useShopping();
@@ -20,7 +21,7 @@ export default function CartScreen() {
   const placing = checkoutState.status === 'working';
   const pendingPayment = unresolvedPayment(payment.attempt);
   return <SafeAreaView edges={['top', 'left', 'right']} style={ui.screen}>
-    <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={ui.flex} enabled={Platform.OS === 'ios'} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <FlatList data={items} keyExtractor={({ medicine }) => medicine.id}
         contentContainerStyle={ui.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag"
         ListHeaderComponent={<View style={styles.header}>
@@ -35,10 +36,10 @@ export default function CartScreen() {
           <View style={styles.emptyIcon}><SymbolView name={{ ios: 'bag', android: 'shopping_bag', web: 'shopping_bag' }} size={56} tintColor={colors.primary} /></View>
           <Text style={ui.heading}>A fresh start for your care</Text>
           <Text style={[ui.body, styles.center]}>Your bag is empty. Find your medicines and we’ll keep them here for you.</Text>
-          <Button label="Find your medicines →" onPress={() => router.navigate('/')} />
+          <Button label="Find your medicines →" onPress={() => returnToShop()} />
         </View>}
         ListFooterComponent={items.length ? <View style={styles.footer}>
-          <Button label="+ Add more medicines" variant="quiet" onPress={() => router.navigate('/')} />
+          <Button label="+ Add more medicines" variant="quiet" onPress={() => returnToShop()} />
           <CouponSection />
           <BillSummary bill={bill} />
           {items.some(({ medicine }) => medicine.rx) && <Text style={ui.small}>Rx items require a valid prescription. This demo does not collect prescriptions.</Text>}

@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'test-renderer';
-import { useScreenActive } from '../src/hooks/useScreenActive';
+import { useScreenActive, useScreenCompletion } from '../src/hooks/useScreenActive';
 import { deferred } from './order-fixtures';
 
 let mockBlur: (() => void) | undefined;
@@ -29,4 +29,20 @@ test('covered native-stack screens reject late navigation while mounted, then re
   expect(isActive()).toBe(true);
   await act(async () => { root.unmount(); });
   expect(isActive()).toBe(false);
+});
+
+test('completion is tied to its focus visit and can navigate only once, including duplicate callbacks', async () => {
+  const root = createRoot(); const navigate = jest.fn();
+  let capture: ReturnType<typeof useScreenCompletion> | undefined;
+  function Probe() { capture = useScreenCompletion(); return null; }
+  await act(async () => { root.render(<Probe />); });
+  const stale = capture?.();
+  mockBlur?.(); mockFocus?.();
+  expect(stale?.isCurrent()).toBe(false);
+  stale?.navigate(navigate);
+  expect(navigate).not.toHaveBeenCalled();
+  const current = capture?.(); current?.navigate(navigate); current?.navigate(navigate); capture?.().navigate(navigate);
+  expect(navigate).toHaveBeenCalledTimes(1);
+  await act(async () => { root.unmount(); });
+  expect(current?.isCurrent()).toBe(false);
 });

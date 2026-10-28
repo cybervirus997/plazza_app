@@ -21,7 +21,8 @@ const mockPermissions = { location: 'denied' as PermissionSnapshot['location'], 
 
 jest.mock('@react-native-async-storage/async-storage', () => ({ __esModule: true, default: { getItem: jest.fn(), setItem: jest.fn() } }));
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => true },
+  useFocusEffect: (effect: () => (() => void) | void) => { const React = jest.requireActual<typeof import('react')>('react'); React.useEffect(effect, [effect]); },
+  router: { navigate: jest.fn(), push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => true },
   useLocalSearchParams: () => mockParams,
   usePreventRemove: (prevented: boolean, callback: (options: { repeat(): void }) => void) => {
     mockPreventRemove = { prevented, callback }; return mockDisablePrevention;
@@ -278,7 +279,7 @@ test('delivery entry opens the selector and snapshots stay detached from later e
   const app = await mount(repository, <DeliveryAddressEntry />);
   try {
     await act(async () => { invoke(labelled(app.root, 'Choose delivery address'), 'onPress'); });
-    expect(router.push).toHaveBeenCalledWith('/addresses');
+    expect(router.navigate).toHaveBeenCalledWith('/addresses');
     const snapshot = await app.read().snapshotForOrder();
     await act(async () => { await app.read().save(draft({ city: 'Mysuru' }), { id: before.addresses[0].id }); });
     expect(snapshot?.address.city).toBe('Bengaluru');

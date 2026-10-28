@@ -287,8 +287,8 @@ test('both Home and Cart open the independent delivery address selector without 
     const entries = labelled(root, 'Choose delivery address');
     expect(entries).toHaveLength(2);
     await act(async () => { invoke(entries[0], 'onPress'); invoke(entries[1], 'onPress'); });
-    expect(router.push).toHaveBeenNthCalledWith(1, '/addresses');
-    expect(router.push).toHaveBeenNthCalledWith(2, '/addresses');
+    expect(router.navigate).toHaveBeenNthCalledWith(1, '/addresses');
+    expect(router.navigate).toHaveBeenNthCalledWith(2, '/addresses');
     expect(recentSearches()).toEqual([]);
   } finally { await act(async () => { root.unmount(); }); }
 });

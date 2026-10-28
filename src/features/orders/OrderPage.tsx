@@ -1,11 +1,11 @@
-import { router } from 'expo-router';
+import { backTo } from '../../navigation/commerceNavigation';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { colors, ui } from '../../theme/tokens';
 
-export function goBackToCart() { if (router.canGoBack()) router.back(); else router.replace('/cart'); }
+export function goBackToCart() { backTo('/cart'); }
 export function OrderPage({ title, children, footer, onBack = goBackToCart }: PropsWithChildren<{
   title: string; footer?: ReactNode; onBack?(): void;
 }>) {

@@ -8,7 +8,7 @@ export function DeliveryAddressEntry({ disabled = false }: { disabled?: boolean 
   const { selected, loading, ready, error, warning } = useAddressBook();
   return <Pressable accessibilityRole="button" accessibilityLabel="Choose delivery address"
     disabled={disabled} accessibilityState={{ disabled }}
-    onPress={() => router.push('/addresses')} style={styles.entry}>
+    onPress={() => router.navigate('/addresses')} style={styles.entry}>
     <View style={styles.icon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Text style={styles.pin}>⌂</Text></View>
     <View style={ui.flex}>
       <Text style={ui.label}>DELIVER TO {selected ? `· ${selected.label}` : ''}</Text>

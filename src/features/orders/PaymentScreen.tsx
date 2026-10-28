@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Button } from '../../components/ui/Button';
 import { useShopping } from '../../state/AppStateProvider';
@@ -8,36 +7,43 @@ import { OrderItems } from './OrderItems';
 import { OrderPage } from './OrderPage';
 import { BillSummary } from '../cart/BillSummary';
 import type { OrderingResult } from './ordering';
-import { useScreenActive } from '../../hooks/useScreenActive';
+import { useScreenCompletion } from '../../hooks/useScreenActive';
+import { backTo, confirmOrder, openReceipt, returnToShop, reviewCheckout } from '../../navigation/commerceNavigation';
 
 export default function PaymentScreen() {
   const { payment, retryRecovery, checkoutLocked } = useShopping();
   const attempt = payment.attempt;
-  const isActive = useScreenActive();
-  function confirmed(result: OrderingResult | null) {
-    if (isActive() && result?.attempt?.finalized && result.order) router.replace({ pathname: '/order-confirmation', params: { id: result.order.id } });
+  const captureCompletion = useScreenCompletion();
+  async function advance() {
+    if (!attempt) return;
+    const complete = captureCompletion();
+    const result: OrderingResult | null = await payment.advance(attempt.id, attempt.status === 'initiated' ? 'pay' : 'check');
+    if (result?.attempt?.finalized && result.order) {
+      const id = result.order.id;
+      complete.navigate(() => confirmOrder(id));
+    }
   }
   const terminal = attempt?.status === 'failed' || attempt?.status === 'cancelled';
   const footer = !attempt ? <>
     <Text style={ui.body}>Payment status: not started</Text>
     <Text style={ui.body}>No saved payment attempt. Return to review your cart.</Text>
-    <Button label="Review checkout" onPress={() => router.replace('/checkout')} />
+    <Button label="Review checkout" onPress={reviewCheckout} />
   </> : attempt.finalized ? <>
     <Text style={ui.body}>This mock order was finalized. Payment cannot be repeated.</Text>
-    <Button label="View confirmed order" onPress={() => router.replace({ pathname: '/order-confirmation', params: { id: attempt.order.id } })} />
-    <Button label="Continue Shopping" variant="quiet" onPress={() => router.replace('/')} />
+    <Button label="View confirmed order" onPress={() => openReceipt(attempt.order.id)} />
+    <Button label="Continue Shopping" variant="quiet" onPress={() => returnToShop()} />
   </> : terminal ? <>
     <Text style={ui.body}>Your cart is intact. A deliberate retry creates a new payment and checkout identity.</Text>
-    <Button label="Review & start a new attempt" disabled={payment.busy || checkoutLocked} onPress={() => router.replace('/checkout')} />
+    <Button label="Review & start a new attempt" disabled={payment.busy || checkoutLocked} onPress={reviewCheckout} />
     {checkoutLocked && <Button label="Retry payment recovery" disabled={payment.busy} onPress={retryRecovery} />}
   </> : <>
     <Button label={payment.busy ? 'Verifying & saving…' : attempt.status === 'succeeded' ? 'Retry order reconciliation' : attempt.status === 'pending' ? 'Check Status'
       : attempt.method === 'cod' ? 'Confirm mock COD order' : `Pay ${formatMoney(attempt.order.grandTotal)} · simulated UPI`}
-      disabled={payment.busy} onPress={() => { void payment.advance(attempt.id, attempt.status === 'initiated' ? 'pay' : 'check').then(confirmed); }} />
+      disabled={payment.busy} onPress={() => { void advance(); }} />
     {attempt.status !== 'succeeded' && <Button label="Cancel simulated payment" variant="quiet" disabled={payment.busy}
       onPress={() => { void payment.cancel(attempt.id); }} />}
   </>;
-  return <OrderPage title="Simulated payment" footer={footer} onBack={() => router.replace('/cart')}>
+  return <OrderPage title="Simulated payment" footer={footer} onBack={() => backTo('/checkout')}>
     <Text style={ui.body}>No money is transferred. Payment verification and order fulfillment are separate states.</Text>
     {payment.error && <View style={ui.card}>
       <Text accessibilityRole="alert" style={ui.body}>{payment.error}</Text>

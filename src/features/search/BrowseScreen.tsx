@@ -10,6 +10,7 @@ import { NoticeBanner } from '../../components/ui/NoticeBanner';
 import { categories } from '../../data/categories';
 import { filterProducts } from '../catalog/products';
 import { useShopping } from '../../state/AppStateProvider';
+import { returnToShop } from '../../navigation/commerceNavigation';
 import { colors, space, ui } from '../../theme/tokens';
 
 export default function BrowseScreen() {
@@ -22,7 +23,7 @@ export default function BrowseScreen() {
 
   function goHome() {
     if (router.canGoBack()) router.back();
-    else router.replace('/');
+    else returnToShop();
   }
 
   function submit() {
@@ -35,14 +36,14 @@ export default function BrowseScreen() {
       <View style={ui.between}>
         <Button label="← Home" accessibilityLabel="Back to Home" variant="quiet" onPress={goHome} />
         <Button label={`Cart (${itemCount})`} accessibilityLabel={`View cart, ${itemCount} items`}
-          variant="quiet" onPress={() => router.navigate('/cart')} />
+          variant="quiet" onPress={() => returnToShop('cart')} />
       </View>
       <Text style={ui.label}>DEMO PRODUCT CATALOG</Text>
       <Text accessibilityRole="header" style={ui.title}>{category?.title ?? (categoryId ? 'Unknown category' : 'Browse medicines & essentials')}</Text>
       <Text accessibilityLiveRegion="polite" style={ui.body}>
         {query.trim() || categoryId ? `${medicines.length} of ${catalog.length} products match` : `${catalog.length} products in the demo catalog`}
       </Text>
-      {categoryId && <Button label="Show all categories" variant="quiet" onPress={() => router.replace('/browse')} />}
+      {categoryId && <Button label="Show all categories" variant="quiet" onPress={() => router.setParams({ categoryId: undefined })} />}
       <View style={styles.searchBox}>
         <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={colors.primary} size={21} style={styles.searchIcon} />
         <TextInput accessibilityLabel="Filter medicines by name or salt" placeholder="Search products, medicines or ingredients"
