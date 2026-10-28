@@ -4,6 +4,8 @@ Status: **Design proposal / implementation plan**, not a claim that these featur
 Branch: `feat/plazza-commerce-mvp` (created from submitted `master`).
 Keep `master` and existing take-home requirements, tests, routes, and business rules intact. Build incrementally and review generated code.
 
+Stage 1 catalog expansion and Commerce Home are implemented on the feature branch; see [implementation, validation and remaining limitations](COMMERCE_STAGE_1.md). The additional features below remain proposals.
+
 ## Product objective
 
 Demo an end-to-end Android, offline-first health/quick-commerce journey:

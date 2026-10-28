@@ -190,3 +190,10 @@ A clean-install verification exposed a real CI TypeScript blocker in three Press
 The final request authorized EAS Cloud if credentials were available. EAS authenticated as `cybervirus`, used the existing linked project/application ID, created a managed Android keystore, and started true `:app:assembleDebug` build **3de961c3-bbcf-4c65-ab42-e1680262e45c**. Last observed status: **IN_QUEUE**, artifacts empty. [Build logs](https://expo.dev/accounts/cybervirus/projects/rn-interview/builds/3de961c3-bbcf-4c65-ab42-e1680262e45c). No completed APK, local Android build, emulator, or physical-device success is claimed. The build uses the already verified application source; final CI/test/documentation changes do not alter that application runtime.
 
 One focused readiness commit contains only CI, the three test compatibility fixes, and concise documentation updates. No hooks, packages, generated bundles/coverage, credentials, or secrets were added. The user's pre-existing `app.json` EAS-linking edit remains untouched and unstaged; no history rewrite or automatic GitHub push occurred.
+
+
+## Commerce Stage 1 — feature branch
+
+Stage 1 on `feat/plazza-commerce-mvp` preserves the medicine JSON byte-for-byte and all existing coupon, quantity, permission and shopping snapshot rules. A separate 42-product demo fixture, category metadata and an asynchronous local CatalogRepository supply the expanded Home/Browse catalog. Home uses configured shelves, a static offer-banner slot and original bundled illustrations through expo-image; shared cart/search/navigation remain in use. No later roadmap features were added. The original attached medicine catalog is **still required**; the extra demo products do not resolve that missing input.
+
+See [COMMERCE_STAGE_1.md](docs/COMMERCE_STAGE_1.md) for changed modules, architectural trade-offs, 161 passing tests, Android export evidence, the existing SDK patch-alignment follow-up and required device checks. No feature-branch APK or native verification is claimed.

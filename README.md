@@ -6,9 +6,11 @@
 ![Expo SDK 58](https://img.shields.io/badge/Expo-SDK%2058-000000?logo=expo)
 ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white)
 ![Android 13+](https://img.shields.io/badge/Android-13%2B-3DDC84?logo=android&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-144%20passing-22a06b)
+![Tests](https://img.shields.io/badge/Tests-161%20passing-22a06b)
 
 Plazza demonstrates a complete **discover → search → cart → coupon → mock checkout** experience, with Android permission handling, persistent shopping state, deterministic billing and an extensible promotion engine. Everything runs on-device; no API, payment integration or backend is required.
+
+On `feat/plazza-commerce-mvp`, **Stage 1** adds 42 separate demo essentials to the unchanged 15 medicine records, horizontal categories, configurable Home shelves and an offer-banner slot. See [Stage 1 implementation and verification](docs/COMMERCE_STAGE_1.md). Later roadmap stages remain unimplemented.
 
 **Explore:** [Features](#features) · [Quick start](#quick-start) · [Demo walkthrough](#demo-walkthrough) · [Architecture](#architecture) · [Testing--ci](#testing--ci) · [Android builds](#android-builds) · [Decisions & limitations](#decisions--limitations)
 
@@ -17,7 +19,7 @@ Plazza demonstrates a complete **discover → search → cart → coupon → moc
 | Area | What is implemented |
 | --- | --- |
 | **Native permissions** | Foreground location and Android 13+ notification permission flows; granted/denied/blocked states; App Settings shortcut; recheck when returning to the app; a Home debug-status panel and coordinate-based delivery label. |
-| **Discover & search** | Home previews real catalog items; Browse lists the complete local catalog; name **and** ingredient/salt search; live suggestions, matching results and empty/loading/no-results states. |
+| **Discover & search** | Configured Home shelves, horizontal categories and bundled product illustrations; Browse lists all 57 local products and filters by category, name **and** ingredient/salt; live suggestions, matching results and empty/loading/no-results states. |
 | **Recent searches** | Five most recent committed searches, deduplicated and restored after relaunch. |
 | **Cart** | Add, increment, decrement and remove; per-medicine `maxQty` enforcement; Rx badges; synchronized controls across Home, Browse and Cart. |
 | **Coupons & billing** | Four coupon types, one active at a time, automatic revalidation on cart changes and an explanatory Android toast when an applied coupon becomes invalid. |
@@ -44,7 +46,7 @@ Only one coupon may be active. When a cart change breaks eligibility, the coupon
 A quick sequence for reviewing the key requirements:
 
 1. **Open Home:** review the delivery coordinates and permission debug panel; allow or deny access without blocking shopping.
-2. **Discover:** browse all 15 catalog records without typing. Notice ingredient names, prices and Rx badges.
+2. **Discover:** explore categories and shelves, then browse all 57 products without typing. All 15 medicines retain ingredient names, prices, quantity limits and Rx badges; the 42 extra essentials carry demo labels.
 3. **Search:** try `Dolo` (medicine name) and `Paracetamol` (salt); observe suggestions and recent-search behavior.
 4. **Build a cart:** add **2 × Allegra 120** (₹360), then open Cart to inspect quantity controls and the live bill.
 5. **Test coupon invalidation:** apply `FLAT50`; reduce Allegra to 1 (₹180). The coupon no longer meets the ₹300 minimum and is removed with an explanation.
@@ -82,7 +84,7 @@ Scan the QR code using **Expo Go** on Android. Expo Go is useful for shopping an
 
 ### Local catalog
 
-The app loads `src/data/catalog.json` and ships its contents locally; no external API is used. Catalog preparation runs through npm lifecycle scripts and generates an ignored static TypeScript import for Metro/EAS.
+The local `CatalogRepository` combines unchanged `src/data/catalog.json` medicine records with the separate `src/data/demo-products.json` fixture and category metadata. Both fixtures and original generic product illustrations ship locally; no external API is used. Medicine catalog preparation runs through npm lifecycle scripts and generates an ignored static TypeScript import for Metro/EAS. The demo fixture never substitutes for a missing required medicine catalog.
 
 ```bash
 npm run prepare:catalog -- --required   # require and validate a local catalog
@@ -98,12 +100,13 @@ After changing the JSON, restart Metro with `--clear`.
 ```text
 src/
 ├── app/                # Expo Router layouts; Home/Cart tabs + Browse route
-├── features/           # Search, cart and permission screens/flows
+├── features/           # Modular Home, catalog filters, search, cart and permissions
 ├── components/         # Shared medicine cards, quantity controls and UI
 ├── domain/             # Pure search, cart, coupon and bill calculations
 ├── state/              # Shared reducer, Context and user notices
 ├── storage/            # Versioned, validated AsyncStorage snapshots
-├── data/               # Local catalog and catalog loader
+├── data/               # Medicine source, separate demo products and categories
+├── repositories/       # Catalog interface and local adapter
 └── theme/              # Design tokens
 tests/                  # Domain, state, storage, permissions and UI tests
 scripts/                # Catalog preparation and demo preflight
@@ -116,6 +119,7 @@ scripts/                # Catalog preparation and demo preflight
 - **Derived totals:** item total, discount, fee and grand total are calculated from current cart state rather than persisted.
 - **Defensive persistence:** versioned snapshots validate saved data, recover safely from missing/corrupt records and serialize writes.
 - **Permission isolation:** Expo Go skips unsupported Android notifications-module loading; custom builds retain notification channel and permission support.
+- **Replaceable catalog:** asynchronous repository loading precedes restoration of the unchanged shopping snapshot; typed section configuration controls Home composition. Existing cart, coupon and pricing functions remain shared.
 
 Detailed trade-offs and decisions are recorded in [NOTES.md](NOTES.md).
 
@@ -132,7 +136,7 @@ npx expo-doctor                     # project health checks
 npm run bundle:android              # JS/Hermes export; NOT an APK
 ```
 
-**Last reported local verification (28 October 2026):** **144 tests passed across 16 suites**, TypeScript and ESLint passed, and Expo Doctor reported **20/20**. GitHub Actions [also passed on commit `70f2065`](https://github.com/cybervirus997/plazza_app/actions/runs/40705032679). These checks validate code and mocked UI behavior, **not** native permission dialogs or real-device interactions.
+**Stage 1 local verification (28 October 2026):** **161 tests passed across 18 suites**, TypeScript, ESLint, demo preflight, required catalog preparation and Android Hermes export passed. The online Expo compatibility check reports 12 newer patch versions for existing SDK 58 packages; the newly added `expo-image` is compatible. See [Stage 1 verification and limits](docs/COMMERCE_STAGE_1.md). The earlier submitted source [passed GitHub Actions on commit `70f2065`](https://github.com/cybervirus997/plazza_app/actions/runs/40705032679); this does not establish CI or native-device verification for the feature branch.
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on **push**, **pull request** and **manual dispatch**, using Node.js 24, `npm ci`, required catalog preparation, TypeScript, lint and tests. No emulator or EAS credentials are required.
 
@@ -167,6 +171,7 @@ Connect the device to Metro (typically over the same Wi-Fi). For a USB-connected
 This is an **assessment prototype**, not a production pharmacy or real delivery service.
 
 - The currently bundled catalog is a **PDF-derived substitute**; the separately supplied original catalog remains an outstanding input.
+- The extra 42 products, availability and generic illustrations are demo fixtures, not live inventory or exact product packaging. Rebuild an existing custom development client to include the added `expo-image` native module.
 - Checkout is **mock-only**. There is no order API, payment, prescription upload, real delivery estimate, or tracking.
 - One-time coupon use is **local to this installation**. Clearing app data or uninstalling resets it.
 - Native permission dialogs, blocked → Settings → return behavior, Android toast visibility, force-close persistence and accessibility on a physical device require recorded device verification. Automated tests alone do not establish those outcomes.
