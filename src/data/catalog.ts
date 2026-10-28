@@ -4,7 +4,9 @@ import { searchMedicines } from '../domain/search';
 import { catalogSource } from './catalog.generated';
 
 export function parseCatalog(source: unknown): readonly Medicine[] {
-  if (!Array.isArray(source)) throw new Error('The medicine catalog must be an array.');
+  if (!Array.isArray(source) || source.length === 0) {
+    throw new Error('The medicine catalog must be a nonempty array.');
+  }
   const ids = new Set<string>();
   return source.map((item: unknown) => {
     if (!isRecord(item) || typeof item.id !== 'string' || !item.id.trim()

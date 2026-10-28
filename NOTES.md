@@ -2,9 +2,9 @@
 
 ## 1. Assumptions and missing inputs
 
-The repository, parent project folder, and supplied Codex attachments were searched for `catalog.json` and the candidate PDF. Neither was present. The pasted brief is the requirements source. **No replacement production catalog was invented.** Synthetic `tests/fixtures.ts` data is never imported by application code.
+During initial implementation, the repository, parent folder, and supplied attachments contained neither the original `catalog.json` nor the candidate PDF. The pasted brief remains the requirements source. The user has now supplied **15 PDF-derived demo records** in `src/data/catalog.json` for the urgent live demo. This is a temporary, explicitly authorized substitute; **it is not the original attached catalog required for final submission**. Synthetic `tests/fixtures.ts` remains isolated from application code.
 
-The loader expects the stated Medicine array (`id`, `name`, `salt`, `price`, `maxQty`, `rx`). The actual schema and end-to-end shopping behavior remain unverified until the original arrives. Put the unchanged original at `src/data/catalog.json` or root `catalog.json`. Preparation generates an ignored TypeScript import and preserves the original bytes. Missing data yields a clear Home error; snapshot writes are disabled so unavailable catalog data cannot erase a previously saved cart. The EAS post-install hook rejects builds without the original.
+The loader expects the stated Medicine array (`id`, `name`, `salt`, `price`, `maxQty`, `rx`). Preparation generates an ignored static TypeScript import of the supplied file, preserving its bytes and including its data in Metro/EAS bundles. The preferred path is `src/data/catalog.json`; root `catalog.json` is a fallback. Missing or invalid data produces an explicit Home error rather than a silent successful empty catalog. Snapshot writes are disabled when loading fails. The EAS post-install hook requires a catalog file; **that check verifies presence, not provenance**. Replace the temporary records with the unchanged original before final submission. Device shopping behavior remains unverified.
 
 Prices are per unit in INR. Item totals sum integer paise. Percentage discounts round to the nearest whole rupee using `Math.round` (₹25.50 → ₹26). Delivery uses the pre-discount item total: ₹40 for positive totals below ₹499, otherwise zero. Empty/zero-valued carts have zero delivery. No tax or prescription-upload flow was specified. Orders are mock orders with no backend or payment.
 
@@ -54,24 +54,27 @@ Open Settings uses Linking. An AppState foreground transition rechecks both perm
 
 App config sets foreground-location/notification permissions and their plugins. Introspection confirmed coarse/fine location and POST_NOTIFICATIONS, with background location, foreground location service, and activity recognition explicitly excluded. This is generated config inspection, not inspection of a completed APK's merged manifest.
 
-A connected Expo Go client emitted a real missing `ExpoTopicSubscriptionModule` error during eager notification-module loading. The eager import was rejected and replaced with a guarded lazy import inside the permission flow. A regression test reproduces the import failure and confirms permission checks/shopping modules remain available with notifications unavailable. Jest required a test-only Babel dynamic-import transform for its CommonJS environment; Metro retains normal import handling. No SDK version was changed to work around Expo Go. A custom APK remains the target for native verification.
+A connected Expo Go client emitted a real missing `ExpoTopicSubscriptionModule` error when SDK 58's notifications package loaded. The initial guarded lazy import still attempted to load that package. Demo stabilization now checks `isRunningInExpoGo()` from the installed `expo` package **before** the Android notification import, and skips that import in Android Expo Go with notifications marked unavailable. The SDK helper detects the native ExpoGo module; it does not rely on `StoreClient`, which can also describe development clients. Custom development/standalone APKs retain native channel creation and permission requests. Foreground location, denied/blocked/granted UI, and AppState rechecking remain unchanged. Tests cover Expo Go skipping and custom-build behavior, but do not constitute physical-device verification. The existing test-only Babel dynamic-import transform remains; Metro controls application imports. No SDK version was changed.
 
 ## 8. Run and automated verification
 
 ```sh
 npm ci
-# Supply the original catalog before the actual shopping demo.
+npm run check:demo
 npm run check
 npm test -- --coverage
 npx expo install --check
 npx expo-doctor
 npm run bundle:android
-npm start -- --dev-client --clear
+npm run prepare:catalog -- --required
+npm start -- --go --clear        # Expo Go shopping/location demo
+# For an installed debug development APK instead:
+# npm start -- --dev-client --clear
 ```
 
-Executed: **112 tests in 10 suites passed**, strict TypeScript passed, Expo ESLint passed without warnings, online Expo compatibility validation passed, and **20/20 Expo Doctor checks passed**. Android Hermes export and web server/client export succeeded. Android export proves that Metro packages the JS, not that a Gradle build or native startup succeeds. The last verification results after review are recorded at the end of this file.
+Before demo stabilization: **112 tests in 10 suites passed**, strict TypeScript and lint passed, online compatibility passed, and **20/20 Expo Doctor checks passed**. Android/web exports also succeeded. These results are historical; final stabilization checks must be recorded separately. A JS export verifies packaging, not a Gradle build or native startup.
 
-The final 112-test coverage run measured domain/reducer/persistence at **95.36% statements, 91.4% branches, 93.47% functions, 94.64% lines**. Coverage excludes UI and native behavior; the missing-module regression tests notification failure isolation separately.
+The earlier 112-test coverage run measured domain/reducer/persistence at **95.36% statements, 91.4% branches, 93.47% functions, 94.64% lines**. Coverage excludes UI/native behavior; these figures have not been rerun for stabilization.
 
 `npm audit` reported **14 findings: 11 low, 3 high, zero critical**. The high chain is the pre-existing Expo CLI → Zod dependency; Zod 3.25.76 exists in the initial lockfile. npm's proposed fix was a major downgrade to Expo 51.0.39, which was rejected to preserve SDK 58. No app-level Zod package was added. The upstream CLI advisory remains unresolved; no forced audit fix or dependency override was used.
 
@@ -81,9 +84,11 @@ No prior EAS configuration or application ID existed. `eas.json` provides `debug
 
 Debug may require Metro and development tooling. Preview is a standalone release APK for an independent demo; it is not described as a debug artifact. See [Expo APK guidance](https://docs.expo.dev/build-reference/apk/).
 
-EAS `whoami` returned **Not logged in**. No build was started for an app missing its original catalog, no signing credentials were generated, and no APK is available. After supplying and committing the original catalog:
+The last EAS `whoami` returned **Not logged in**. No completed cloud build or APK is claimed. Demo builds may use the supplied temporary catalog; the original remains mandatory for final submission. After catalog preparation and checks, sign in/link the user's EAS project if needed:
 
 ```sh
+npm run check:demo
+npm run prepare:catalog -- --required
 npx eas-cli@latest login
 npx eas-cli@latest init
 npx eas-cli@latest build --platform android --profile debug
@@ -94,7 +99,7 @@ EAS init links the user's own project; signing setup may be interactive. Install
 
 ## 10. Actual AI usage and review history
 
-The supplied prompt asked Codex to implement the complete take-home, preserve the SDK, use the original catalog, test boundaries, review minimalism, create commits, and honestly report blockers. Codex inspected the starter, consulted official SDK 58 docs, implemented domain/reducer/storage/UI/permissions/build tooling, created isolated test fixtures, ran the recorded checks, and wrote the handoff. No sub-agents were used; no human review is claimed.
+The initial prompt asked Codex to implement the take-home, preserve the SDK, use the original catalog, test boundaries, review minimalism, create commits, and report blockers honestly. That initial implementation used no sub-agents. The subsequent urgent stabilization prompt supplied temporary catalog data/preflight tooling and requested focused runtime fixes without a rewrite. Focused parallel agents checked catalog/search/cart data, audited providers/build configuration, and updated documentation while the parent handled Expo Go detection and verification. No human review is claimed.
 
 Actual review fixes included zero-valued delivery semantics; saved-quantity sanitization; ordered storage writes; avoiding writes without catalog data; correcting the root-catalog relative import; removing obsolete starter type/lint errors; registry-driven redemption; isolating SDK 58 notification loading after observing the Expo Go failure; and transforming dynamic imports only in Jest. Test expectations were not weakened when the lazy import first exposed a Jest transform failure.
 
@@ -108,13 +113,13 @@ References: [SDK 58](https://docs.expo.dev/versions/v58.0.0/), [Expo index](http
 
 ## 11. Limitations and improvements
 
-The assignment's definition of done is **not satisfied** until the original catalog is supplied, real shopping flows use it, an actual debug APK completes, and device checks pass. ADB was available but reported no attached devices. True blocked permission behavior, Settings return, force-close restoration, actual-catalog Rx/search results, font-scale/TalkBack, and the final UI were not manually verified on hardware. Follow [ANDROID_CHECKLIST.md](docs/ANDROID_CHECKLIST.md).
+The assignment's definition of done is **not satisfied** until the original catalog replaces the PDF-derived demo substitute, real shopping flows use it, an actual debug APK completes, and device checks pass. The supplied demo catalog enables data-level checks now; it does not resolve the original-file requirement. True blocked permission behavior, Settings return, force-close restoration, font-scale/TalkBack, and the final UI still require hardware checks. Follow [ANDROID_CHECKLIST.md](docs/ANDROID_CHECKLIST.md).
 
 The Browser integration failed before navigation with `Importing module "node:process" is not allowed in node_repl`. Visual QA was not performed; web export is not visual QA. Web is a secondary preview and does not request native mobile permissions. EAS login/project linking/signing/build execution and the final APK manifest are external gaps.
 
-With more time: obtain the catalog, finish device/accessibility checks, capture screenshots, add focused keyboard/navigation/Settings UI integration tests, measure real-catalog list performance before optimizing indexing, and address upstream advisories when an SDK-compatible fix exists. No speculative network/state architecture was added.
+With more time: obtain the original catalog and finish device/accessibility checks. No speculative network/state architecture, framework migration, or broad UI redesign is part of demo stabilization.
 
-## Final review verification · 28 October 2026
+## Initial implementation verification · 28 October 2026
 
 - `npm run typecheck`: passed, no TypeScript errors.
 - `npm run lint`: passed, zero warnings/errors.
@@ -125,3 +130,20 @@ With more time: obtain the catalog, finish device/accessibility checks, capture 
 - `git diff --check`: passed.
 - Missing-catalog EAS gate: verified that `--required` exits 1; development preparation still permits the explicit unavailable-data UI.
 - Ponytail, visual browser QA, physical-device tests, and APK delivery: **not completed**, for the blockers above.
+
+## Urgent demo stabilization verification · 28 October 2026
+
+Focused production changes are the Android Expo Go guard before notification import and rejection of an empty catalog. Providers, navigation, UI design, existing dependencies, native configuration, and EAS profiles were retained. `check:demo` now runs the supplied preflight script. The user-supplied catalog/preflight files were kept unchanged; catalog SHA-256 is `6d8f0e6f7d9116754d4f152709649a5029193859f177d3a9192db685f16ba7f8`.
+
+Root causes: the original catalog was absent and the generated import had no medicines until the supplied data was prepared; an empty array also passed schema validation without an error, now fixed. The SDK 58 notifications entry point loads `ExpoTopicSubscriptionModule`, absent in the reported Expo Go binary. Catching an attempted import was insufficient for this environment; Android Expo Go now bypasses that import entirely using the SDK helper. No other eager notification import exists in application code; its remaining top-level import is type-only. The provider hierarchy is correct and was not rewritten.
+
+- `npm run check:demo`: passed, including the 15-record schema/count and debug/preview profiles. With ADB access, it reported no attached devices.
+- `npm run check`: passed; TypeScript and lint clean, **124 tests across 13 suites**, zero failed tests and zero snapshots.
+- `npm run prepare:catalog -- --required`: passed; generated static import is `./catalog.json`.
+- `npm run bundle:android`: passed; all 15 supplied medicine names are present in the exported Hermes bundle.
+- `npx expo install --check`: passed, dependencies are up to date.
+- `npx eas-cli@latest whoami`: **Not logged in**; no APK was built or assumed to exist.
+- Tests cover all 15 actual demo records, name/partial-salt matching, cart additions/limits, skipped package evaluation in Android Expo Go for initial/request/refresh, native notification requests in custom clients (including `StoreClient`), and missing-module recovery.
+- A renderer integration test exercises the actual Home/Cart components, search hook, catalog, reducer, and AppStateProvider. It verifies result cards, enabled Add, name/salt searching, and synchronized Add/increment quantities. Native surfaces are mocked; this is not Android runtime verification.
+
+Physical-device Expo Go startup, custom-APK channel/permission behavior, true blocked states, Settings return, and restart persistence still require the device checklist. EAS login/project linking/signing/build completion remain external steps. The 15 PDF-derived records are temporary demo data; the unchanged original attached catalog remains required for final assignment submission.

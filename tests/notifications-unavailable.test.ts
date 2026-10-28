@@ -1,6 +1,10 @@
 import { Platform } from 'react-native';
 import { readPermissions } from '../src/features/permissions/permissions';
 
+jest.mock('expo', () => {
+  const actual: typeof import('expo') = jest.requireActual('expo');
+  return { ...actual, isRunningInExpoGo: jest.fn(() => false) };
+});
 jest.mock('expo-location', () => ({
   getForegroundPermissionsAsync: async () => ({ status: 'denied', granted: false, canAskAgain: true, expires: 'never' }),
 }));

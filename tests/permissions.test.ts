@@ -1,9 +1,14 @@
-import { PermissionStatus as NativeStatus, type PermissionResponse } from 'expo';
+import { isRunningInExpoGo, PermissionStatus as NativeStatus, type PermissionResponse } from 'expo';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { permissionStatus, readPermissions, requestInitialPermissions } from '../src/features/permissions/permissions';
 
+jest.mock('expo', () => {
+  const actual: typeof import('expo') = jest.requireActual('expo');
+  return { ...actual, isRunningInExpoGo: jest.fn(() => false) };
+});
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 }, getForegroundPermissionsAsync: jest.fn(), requestForegroundPermissionsAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(), hasServicesEnabledAsync: jest.fn(),
@@ -20,6 +25,7 @@ beforeEach(() => {
   jest.restoreAllMocks();
   jest.clearAllMocks();
   jest.replaceProperty(Platform, 'OS', 'android');
+  jest.mocked(isRunningInExpoGo).mockReturnValue(false);
   jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue(response(NativeStatus.UNDETERMINED));
   jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue(response(NativeStatus.DENIED));
   jest.mocked(Notifications.getPermissionsAsync).mockResolvedValue(response(NativeStatus.UNDETERMINED));
@@ -43,6 +49,21 @@ test('first launch requests both permissions and configures the channel first', 
   expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
   expect(jest.mocked(Notifications.setNotificationChannelAsync).mock.invocationCallOrder[0])
     .toBeLessThan(jest.mocked(Notifications.requestPermissionsAsync).mock.invocationCallOrder[0]);
+});
+test('Android Expo Go skips notification APIs while preserving foreground location', async () => {
+  jest.mocked(isRunningInExpoGo).mockReturnValue(true);
+  expect(await readPermissions('initial')).toMatchObject({ location: 'denied', notifications: 'unavailable' });
+  expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+  expect(Notifications.setNotificationChannelAsync).not.toHaveBeenCalled();
+  expect(Notifications.getPermissionsAsync).not.toHaveBeenCalled();
+  expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+});
+test('a custom client marked StoreClient still requests native notification permission', async () => {
+  jest.replaceProperty(Constants, 'executionEnvironment', ExecutionEnvironment.StoreClient);
+  expect(await readPermissions('initial')).toMatchObject({ notifications: 'denied' });
+  expect(isRunningInExpoGo).toHaveBeenCalled();
+  expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledTimes(1);
+  expect(Notifications.requestPermissionsAsync).toHaveBeenCalledTimes(1);
 });
 test('denied permissions are not automatically requested on each launch', async () => {
   jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue(response(NativeStatus.DENIED));

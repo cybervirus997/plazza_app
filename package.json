@@ -51,6 +51,7 @@
     "test": "jest --runInBand --watchman=false",
     "test:watch": "jest --watch --watchman=false",
     "check": "npm run typecheck && npm run lint && npm test",
+    "check:demo": "node scripts/demo-preflight.cjs",
     "prepare:catalog": "node scripts/prepare-catalog.cjs",
     "prestart": "npm run prepare:catalog",
     "preandroid": "npm run prepare:catalog",

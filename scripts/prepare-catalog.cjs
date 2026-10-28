@@ -6,7 +6,7 @@ const output = path.join(root, 'src/data/catalog.generated.ts');
 const candidates = ['src/data/catalog.json', 'catalog.json'];
 const original = candidates.find((candidate) => fs.existsSync(path.join(root, candidate)));
 fs.mkdirSync(path.dirname(output), { recursive: true });
-// Import the original bytes without transcribing, modifying, or substituting test data.
+// Import the supplied catalog without modifying its bytes or substituting test data.
 const content = original
   ? `import original from '${original === 'catalog.json' ? '../..' : '.'}/catalog.json';\nexport const catalogSource: unknown = original;\n`
   : 'export const catalogSource: unknown = null;\n';

@@ -1,4 +1,4 @@
-import type { PermissionResponse } from 'expo';
+import { isRunningInExpoGo, type PermissionResponse } from 'expo';
 import * as Location from 'expo-location';
 import type { NotificationPermissionsStatus } from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -57,20 +57,22 @@ export async function readPermissions(mode: RequestMode): Promise<PermissionSnap
     if (shouldRequest(response, mode)) response = await Location.requestForegroundPermissionsAsync();
     location = permissionStatus(response);
   } catch { /* The unavailable status is visible in the permission panel. */ }
-  try {
-    // Some Expo Go binaries lack SDK 58's notification topic module. A failed
-    // native module import must not prevent the shopping routes from loading.
-    const notificationsApi = await import('expo-notifications');
-    if (Platform.OS === 'android') {
-      await notificationsApi.setNotificationChannelAsync('orders', {
-        name: 'Order updates', importance: notificationsApi.AndroidImportance.DEFAULT,
-      });
-    }
-    let response = await notificationsApi.getPermissionsAsync();
-    if (shouldRequest(response, mode)) response = await notificationsApi.requestPermissionsAsync();
-    notifications = notificationStatus(response, [notificationsApi.IosAuthorizationStatus.AUTHORIZED,
-      notificationsApi.IosAuthorizationStatus.PROVISIONAL, notificationsApi.IosAuthorizationStatus.EPHEMERAL]);
-  } catch { /* Shopping remains available without notification permission. */ }
+  // Expo Go lacks the topic module loaded by SDK 58's notifications entry point.
+  // Detect it before import; custom development clients still use native permissions.
+  if (Platform.OS !== 'android' || !isRunningInExpoGo()) {
+    try {
+      const notificationsApi = await import('expo-notifications');
+      if (Platform.OS === 'android') {
+        await notificationsApi.setNotificationChannelAsync('orders', {
+          name: 'Order updates', importance: notificationsApi.AndroidImportance.DEFAULT,
+        });
+      }
+      let response = await notificationsApi.getPermissionsAsync();
+      if (shouldRequest(response, mode)) response = await notificationsApi.requestPermissionsAsync();
+      notifications = notificationStatus(response, [notificationsApi.IosAuthorizationStatus.AUTHORIZED,
+        notificationsApi.IosAuthorizationStatus.PROVISIONAL, notificationsApi.IosAuthorizationStatus.EPHEMERAL]);
+    } catch { /* Shopping remains available without notification permission. */ }
+  }
 
   let coordinates: PermissionSnapshot['coordinates'] = null;
   let locationMessage = location === 'blocked' ? 'Location access is blocked. Enable it in Settings.'
