@@ -2,7 +2,7 @@
 
 Expo SDK 58, React Native 0.88, React 19.3, strict TypeScript, and Expo Router. Android 13+ is the intended demo platform. The installed Expo and React Native versions are preserved.
 
-**Demo catalog available:** `src/data/catalog.json` contains the user's 15 PDF-derived demo records. This is a temporary substitute, not the assignment's original attached catalog. The original-catalog submission requirement remains unresolved. APK builds and physical-device verification are deferred.
+**Demo catalog available:** `src/data/catalog.json` contains the user's 15 PDF-derived demo records. This is a temporary substitute, not the assignment's original attached catalog. The original-catalog submission requirement remains unresolved. A [true debug cloud build](https://expo.dev/accounts/cybervirus/projects/rn-interview/builds/3de961c3-bbcf-4c65-ab42-e1680262e45c) has been started; no completed APK or device verification is claimed.
 
 ## Run
 
@@ -39,6 +39,10 @@ Latest discovery pass: **144 tests across 16 suites passed**, with clean TypeScr
 Home shows four real catalog medicines before typing and a **Browse all medicines** action. Typing shows up to six suggestions with ingredient, price, and Rx information. Select a suggestion to view that medicine, submit to show all matches on Home, or choose **View all matching medicines** to open the filtered Browse screen. Only committed searches enter recent history; clearing the input returns to discovery.
 
 Browse lists all 15 supplied medicines and offers the same name/ingredient filtering, shared Add/quantity controls, Home back navigation, and a Cart shortcut. It is a stack screen at `/browse`; the only bottom tabs remain Home and Cart.
+
+## GitHub CI
+
+`.github/workflows/ci.yml` runs on push, pull requests, and manual dispatch. It uses Ubuntu, Node.js 24, npm caching, `npm ci`, required catalog preparation, TypeScript, ESLint, and Jest. Any failed check fails the job. No EAS credentials or emulator are needed. A local commit does not trigger GitHub Actions; push the verified commit to run CI remotely.
 
 ## Build APKs with EAS
 

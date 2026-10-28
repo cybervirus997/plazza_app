@@ -111,8 +111,8 @@ Native builds, signing, EAS execution, and physical Android verification are exp
 | Requirement | Status | Implementation | Evidence and outstanding work |
 |---|---|---|---|
 | Git repository prepared | VERIFIED | existing `.git`, tracked source/config/tests/docs | Git history and status were inspected. The user's unrelated `app.json` EAS-linking change is outside this pass and must remain preserved/unstaged. |
-| Installable Debug APK | BLOCKED | existing `eas.json` true `:app:assembleDebug` profile | No completed debug APK/artifact is present. Build/signing/install verification is explicitly deferred; a Metro/JS export is not an APK. |
-| Automated tests | VERIFIED | Jest/jest-expo, `tests/`, npm scripts | Fresh complete post-UX run: **144 tests across 16 suites passed**, zero failures/snapshots. Includes existing coupon/persistence/native-mock regressions and new discovery/race/UI checks. |
+| Installable Debug APK | BLOCKED | existing `eas.json` true `:app:assembleDebug` profile | Final-readiness pass started EAS build `3de961c3-bbcf-4c65-ab42-e1680262e45c`; last observed status IN_QUEUE, no artifact. Delivery remains blocked until the build finishes; a JS export is not an APK and installation/device behavior remains unverified. |
+| Automated tests | VERIFIED | Jest/jest-expo, `tests/`, npm scripts, `.github/workflows/ci.yml` | Final-readiness local run: **144 tests across 16 suites passed**, zero failures/snapshots. CI runs required catalog preparation, TypeScript, ESLint, and Jest after npm ci on Ubuntu/Node 24. The workflow is statically validated; GitHub execution requires pushing or dispatching it and is not claimed complete. |
 | NOTES.md | VERIFIED | `NOTES.md` | Architecture, catalog provenance, discovery decisions, cleanup proof, actual AI/manual review history, current checks, and deferred native/build gaps are documented. |
 | Meaningful incremental commits | VERIFIED | Git history | Existing milestones include configuration, domain/tests, UI/permissions, fixes, docs, and demo stabilization. The current pass keeps changes focused and records local UX/docs commits after verification. No automatic push or unrelated history rewrite is authorized. |
 
@@ -149,7 +149,7 @@ No source module or image asset was deleted in this pass. `expo-device`, `expo-i
 | Domain/provider/native regression scope | Domain, reducer, storage, permission service, and both providers have zero source diffs in this pass; their existing behavior remains covered by the full regression run. |
 | Node requirement | Active Node 24.22.1 satisfies SDK 58's Node 22.13+ minimum. |
 | `git diff --check` | Passed during focused reviews; unrelated `app.json` user edits are preserved. |
-| EAS / Gradle / signing / APK installation | Not run in this pass, as requested. Debug APK delivery remains BLOCKED/deferred. |
+| EAS / Gradle / signing / APK installation | Final-readiness request authorized a cloud debug build. EAS authenticated as cybervirus, created a managed Android keystore, and queued build `3de961c3-bbcf-4c65-ab42-e1680262e45c`. No local Gradle build or APK installation was run. No completed artifact is claimed. |
 | Android physical runtime / Settings / TalkBack / restart persistence | Not performed in this pass, as requested. |
 | Browser visual QA | Retried but blocked before navigation by `Importing module "node:process" is not allowed in node_repl`. No screenshot/visual QA claim is made. |
 

@@ -25,10 +25,11 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 jest.mock('react-native/Libraries/Components/Pressable/Pressable', () => {
   const React = jest.requireActual<typeof import('react')>('react');
+  const state = { pressed: false, hovered: false };
   return {
     __esModule: true,
     default: (props: PressableProps) => React.createElement('Pressable', props,
-      typeof props.children === 'function' ? props.children({ pressed: false, hovered: false }) : props.children),
+      typeof props.children === 'function' ? props.children(state) : props.children),
   };
 });
 
