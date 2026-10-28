@@ -10,13 +10,15 @@ Read [AGENTS.md](../AGENTS.md) first. Its Expo SDK/documentation, Router, depend
 | `src/features` | Feature screens, workflows, hooks and local UI state |
 | `src/domain` | Pure types, validation, pricing and state-transition rules; no React, native, feature, repository or storage imports |
 | `src/repositories` | Replaceable interfaces and data adapters; explicit schema/version handling |
-| `src/storage` | Low-level storage ports, serialization and the existing shopping writer |
+| `src/storage` | Storage ports, versioned serialization and the existing shopping writer; checkout recovery sequencing remains in the feature coordinator |
 | `src/state` | Shared shopping state, hydration and composition of the checkout/payment services |
 | `src/navigation` | Shared Router intent and stack transition policy, without persistence/business rules |
 | `src/components/ui` | Presentation primitives with demonstrated reuse and no repository knowledge |
 | `src/theme` | Consistent colors, spacing, typography and money display |
 
 Keep asynchronous storage out of screens. Pass repositories/ports through existing injection boundaries. Keep shopping, payment, receipts, saved addresses and OS permission state distinct. Checkout preferences are only ephemeral method/slot/simulator UI choices: they survive an Edit Cart pop but own no cart, bill, address, payment outcome or persisted data.
+
+Keep business rules out of JSX. Cross-feature imports need a clear workflow/composition reason; share pure rules through their existing owner rather than duplicating state. Prefer explicit functions, typed parameters and readable composition.
 
 Pure object validation lives in `domain/validation.ts`. The storage compatibility export remains for existing callers. Avoid importing a storage implementation merely to use a type guard. Name modules for their responsibility, not their line count; do not split a file without a clearer API/owner.
 
@@ -52,6 +54,14 @@ Use `useCallback` when an effect/subscriber or a measured memoized child needs s
 - Filters update route parameters/state in place; do not replace a screen and lose its focused input just to clear a category.
 - Keep the address form's existing unsaved/saving `usePreventRemove` guard. Do not bypass it from toolbar/system Back.
 - Android already uses native `resize`; do not add a second height adjustment in Cart. iOS retains keyboard padding. Keep inputs defined at stable component positions and preserve safe areas/sticky actions.
+- Detail screens use the native Stack header with left-aligned title and the shared Back slot from `navigation/headerOptions.tsx`. The slot preserves bounded fallbacks and the form's disabled state; it still dispatches guarded Router actions. Do not add another header container or repeat Back/title in scrolling content. Home/Cart keep their purpose-built headers; both tab navigators hide native headers.
+- A visible, opaque native header owns the top/status-bar inset. Detail content uses `headerContentEdges` for left/right/bottom; do not add another top safe area or automatic top content inset. Address Form's iOS keyboard offset uses the actual native header height from the public `expo-router/react-navigation` entry; Android avoidance stays disabled. Recheck both platforms when changing header ownership.
+
+## Design foundation
+
+`src/theme/tokens.ts` is the sole token source: `colors` retains Plazza green/off-white, `statusColors` defines positive/warning/negative/neutral treatments using that palette, `space` keeps the existing 4/8/12/16/24/32 scale, `typography` owns the text hierarchy, `radii` the 12/14/16/20 corners, `controls` the 48-point minimum touch area and 24-point icons, and `layout` the existing 640-point content limit. Extend these only for demonstrated use; no second theme or forced screen migration. Prefer borders and typography over shadows or enclosing every section in a card. Native/reduced-motion policy remains in the shared navigation options.
+
+Use Button for text actions and IconButton for labelled Back/clear actions; decorative symbols stay hidden from assistive technology. Keep text scalable and layouts flexible. Accessibility labels, disabled/selected state and comfortable touch areas are acceptance requirements. Promote a new primitive only after meaningful reuse; avoid flag-heavy universal components.
 
 ## UI reuse, accessibility and errors
 

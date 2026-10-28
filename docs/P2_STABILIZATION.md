@@ -53,3 +53,21 @@ References: [SDK 58 Router](https://docs.expo.dev/versions/v58.0.0/sdk/router/),
 On 29 October 2026, `npm run typecheck`, `npm run lint`, `npm test`, `npm run check`, `npm run check:demo` and `npm run bundle:android` all passed. **462 tests / 35 suites**: all 432 baseline cases plus 30 new cases. Lint has no errors or warnings. Android export generated a **3.3 MB Hermes bundle, 1,483 modules and 32 assets** in ignored `dist/`. Static preflight warned that `adb devices` was unavailable/failed; Metro emitted non-blocking NO_COLOR/FORCE_COLOR warnings. These checks do not establish native animation smoothness.
 
 Source commits: `98390f4` (navigation/keyboard/focus), `2e0567d` (payment/order UX), `f240611` (targeted architecture/render work). Engineering standards, this audit, the updated Orders documents and the [new-chat handoff](P2_STABILIZATION_HANDOFF.md) are committed together afterwards. See the handoff for remaining device checks and the address-form direct-link fallback edge case to inspect.
+
+## P2 verification continuation — 29 October 2026
+
+Reviewed the focused source changes from `eefd7d7` and closed the handoff's remaining address-form source issue. `returnToBook()` used a direct replacement without returning options when Back history was absent. It now uses shared `backTo('/addresses')`; the root address-book destination has `animationTypeForReplace: 'pop'`, matching the [Expo stack option](https://docs.expo.dev/router/advanced/stack/). The [SDK 58 Router reference](https://docs.expo.dev/versions/v58.0.0/sdk/router/) specifies that `dismissTo` replaces the current entry when the destination is absent. Normal Back retains the originating screen. The existing dirty/saving removal guard remains, and the shared helper dismisses the keyboard once on successful save.
+
+Five added cases cover clean and missing-address direct links, explicit discard, blocked Back during save followed by durable return, and retained address-book identity/bounded fallback through the installed SDK stack reducer. Four UI cases failed before the correction; the focused run afterwards passed **27 cases / 2 suites**. `npm run check` passed typecheck, lint without errors/warnings and **467 tests / 35 suites**. `npm run check:demo`, `npm run bundle:android` and `git diff --check` passed. Export remains **3.3 MB Hermes, 1,483 modules, 32 assets**; preflight's sandbox ADB warning and export's color-environment warnings are non-blocking.
+
+Runtime evidence is limited and explicitly separate:
+
+| Check | Evidence / status |
+| --- | --- |
+| Phone and connection | Existing Metro server for this workspace lists Expo Go (`host.exp.exponent`) on Samsung **SM-G781B, Android 13 / API 33**; user identifies it as an S20 FE. No device is exposed to ADB. |
+| Reload / Home | **User-reported pass:** Home opens normally after refresh. The one-module location bundling line matches the existing lazy module import; it is not an error by itself. |
+| Address discard, keyboard and repeated Edit Cart | First manual check requested; result pending. No animation/keyboard sign-off yet. |
+| Payment outcomes/restart, TalkBack/font scaling, no-history direct link, other Android checklist items | Pending actual device evidence. Expo Go does not verify custom-build native configuration or notification behavior. |
+| Browser visual QA | Retried and blocked during runtime initialization by restricted `node:process`; no browser UI inspection performed. |
+
+At the end of this continuation, `master` and the protected `app.json` bytes still matched the handoff hashes. No dependency/native config change, recovery rewrite, P3, push, APK/EAS build or automatic commit had been performed. The subsequent explicit P2.5 Part 1 request authorized local commits and native header/design-foundation work; its current **478-test / 36-suite** verification and remaining device limits are recorded in [P2_5_PART1.md](P2_5_PART1.md). See the [handoff](P2_STABILIZATION_HANDOFF.md) and [Android checklist](ORDERS_ANDROID_CHECKLIST.md) for continuation.
