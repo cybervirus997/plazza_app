@@ -11,11 +11,14 @@ export interface Notice {
 
 export interface AppState extends ShoppingState {
   readonly hydrated: boolean;
+  readonly checkoutLocked: boolean;
   readonly notice: Notice | null;
   readonly noticeSequence: number;
 }
 
 export type AppAction =
+  | { type: 'checkout-lock'; locked: boolean }
+  | { type: 'checkout-finalized'; checkoutId: string; snapshot: ShoppingState }
   | { type: 'hydrate'; snapshot: ShoppingState; warning?: string }
   | { type: 'add' | 'increase' | 'decrease' | 'remove'; id: string }
   | { type: 'clear' }
@@ -26,7 +29,7 @@ export type AppAction =
   | { type: 'dismiss-notice'; id: number };
 
 export const initialAppState = (): AppState => ({
-  ...emptyShoppingState(), hydrated: false, notice: null, noticeSequence: 0,
+  ...emptyShoppingState(), hydrated: false, checkoutLocked: false, notice: null, noticeSequence: 0,
 });
 
 function withNotice(state: AppState, message: string, kind: Notice['kind']): AppState {
@@ -51,6 +54,12 @@ export function revalidateCoupon(state: ShoppingState, catalog: readonly Medicin
 
 export function createAppReducer(catalog: readonly Medicine[]) {
   return function appReducer(state: AppState, action: AppAction): AppState {
+    if (action.type === 'checkout-lock') return { ...state, checkoutLocked: action.locked };
+    if (action.type === 'checkout-finalized') {
+      if (!state.hydrated || action.snapshot.lastFinalizedCheckoutId !== action.checkoutId
+        || state.lastFinalizedCheckoutId === action.checkoutId) return state;
+      return withNotice({ ...state, ...action.snapshot }, 'Order saved successfully on this device. This was a demo order; no payment was taken.', 'order');
+    }
     if (action.type === 'hydrate') {
       if (state.hydrated) return state;
       const checked = revalidateCoupon(action.snapshot, catalog);
@@ -59,7 +68,7 @@ export function createAppReducer(catalog: readonly Medicine[]) {
       return action.warning ? withNotice(next, action.warning, 'error') : next;
     }
     // User actions never race ahead of restoration and get overwritten by it.
-    if (!state.hydrated) return state;
+    if (!state.hydrated || (state.checkoutLocked && action.type !== 'dismiss-notice')) return state;
     switch (action.type) {
       case 'add':
       case 'increase':

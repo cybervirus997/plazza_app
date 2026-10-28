@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function MedicineCard({ medicine, quantity, inCart = false, onSelect }: Props) {
-  const { dispatch, catalog } = useShopping();
+  const { dispatch, catalog, checkoutLocked } = useShopping();
   const product = catalog.find((item) => item.id === medicine.id);
   const details = <>
       <ProductImage imageKey={product?.imageKey} />
@@ -35,7 +35,7 @@ export function MedicineCard({ medicine, quantity, inCart = false, onSelect }: P
       <View><Text style={styles.price}>{formatMoney(medicine.price)}</Text><Text style={ui.small}>per unit</Text></View>
       <QuantityControl medicine={medicine} quantity={quantity} />
     </View>
-    {inCart && <Button label="Remove item" variant="quiet" accessibilityLabel={`Remove ${medicine.name} from cart`}
+    {inCart && <Button label="Remove item" variant="quiet" disabled={checkoutLocked} accessibilityLabel={`Remove ${medicine.name} from cart`}
       onPress={() => dispatch({ type: 'remove', id: medicine.id })} />}
   </View>;
 }

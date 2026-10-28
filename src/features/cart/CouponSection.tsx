@@ -7,7 +7,7 @@ import { colors, ui } from '../../theme/tokens';
 
 export function CouponSection() {
   const [input, setInput] = useState('');
-  const { state, dispatch } = useShopping();
+  const { state, dispatch, checkoutLocked } = useShopping();
   const feedback = state.notice?.kind === 'error' || state.notice?.kind === 'auto-removal'
     ? state.notice : null;
   function apply(code: string) {
@@ -19,12 +19,12 @@ export function CouponSection() {
     {state.activeCouponCode ? <View accessibilityLiveRegion="polite" style={styles.active}>
       <Text style={styles.code}>✓ {state.activeCouponCode} applied</Text>
       <Text style={ui.small}>{couponRules.find((rule) => rule.code === state.activeCouponCode)?.description}</Text>
-      <Button label="Remove coupon" variant="quiet" onPress={() => dispatch({ type: 'remove-coupon' })} />
+      <Button label="Remove coupon" variant="quiet" disabled={checkoutLocked} onPress={() => dispatch({ type: 'remove-coupon' })} />
     </View> : <View style={styles.inputRow}>
-        <TextInput value={input} onChangeText={setInput} accessibilityLabel="Coupon code" placeholder="Enter coupon code"
+        <TextInput value={input} editable={!checkoutLocked} onChangeText={setInput} accessibilityLabel="Coupon code" placeholder="Enter coupon code"
           placeholderTextColor={colors.muted} autoCapitalize="characters" autoCorrect={false} returnKeyType="done"
           onSubmitEditing={() => apply(input)} style={ui.input} />
-        <Button label="Apply" variant="quiet" disabled={!input.trim()} onPress={() => apply(input)} />
+        <Button label="Apply" variant="quiet" disabled={checkoutLocked || !input.trim()} onPress={() => apply(input)} />
     </View>}
     {feedback && <View accessibilityLabel="Coupon feedback" style={[styles.feedback, feedback.kind === 'error' && styles.error]}>
       <Text accessibilityRole={feedback.kind === 'error' ? 'alert' : undefined} accessibilityLiveRegion="polite"
@@ -36,7 +36,7 @@ export function CouponSection() {
         <View style={ui.flex}><Text style={styles.code}>{rule.code}</Text><Text style={ui.small}>{rule.description}</Text></View>
         <Button label={used ? 'Used' : 'Use'} variant="quiet"
           accessibilityLabel={used ? `${rule.code} already used` : `Use coupon ${rule.code}`}
-          disabled={used} onPress={() => apply(rule.code)} />
+          disabled={used || checkoutLocked} onPress={() => apply(rule.code)} />
       </View>;
     })}</View>}
   </View>;

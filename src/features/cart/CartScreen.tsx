@@ -10,9 +10,13 @@ import { colors, formatMoney, ui } from '../../theme/tokens';
 import { BillSummary } from './BillSummary';
 import { CouponSection } from './CouponSection';
 import { DeliveryAddressEntry } from '../addresses/DeliveryAddressEntry';
+import { useAddressBook } from '../addresses/AddressBookProvider';
 
 export default function CartScreen() {
-  const { items, itemCount, bill, dispatch } = useShopping();
+  const { items, itemCount, bill, checkout, checkoutState, checkoutLocked } = useShopping();
+  const addresses = useAddressBook();
+  const retry = checkoutState.status === 'error' && checkoutLocked;
+  const placing = checkoutState.status === 'working';
   return <SafeAreaView edges={['top', 'left', 'right']} style={ui.screen}>
     <KeyboardAvoidingView style={ui.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <FlatList data={items} keyExtractor={({ medicine }) => medicine.id}
@@ -39,11 +43,18 @@ export default function CartScreen() {
           <Text style={[ui.small, styles.center]}>Made for your everyday care. This is a demo order.</Text>
         </View> : undefined} />
       <View style={styles.checkout}>
+        <View style={styles.checkoutFeedback} accessibilityLiveRegion="polite">
+          {checkoutState.error && <Text accessibilityRole="alert" style={styles.checkoutError}>{checkoutState.error}</Text>}
+          {checkoutState.orderId && <Text style={ui.body}>Your demo order is saved on this device. No payment was taken.</Text>}
+          {retry && <Text style={ui.small}>Retry finishes the same checkout; it does not place another order.</Text>}
+          {!addresses.selected && !retry && <Text style={ui.body}>Choose a delivery address before placing your demo order.</Text>}
+        </View>
         <View style={styles.checkoutInner}>
           <View><Text style={ui.small}>GRAND TOTAL</Text><Text style={styles.total}>{formatMoney(bill.grandTotal)}</Text></View>
-          <View style={styles.checkoutButton}><Button label="Place Order →" disabled={!items.length} onPress={() => {
+          <View style={styles.checkoutButton}><Button label={placing ? 'Placing order…' : retry ? 'Retry checkout recovery' : 'Place Order →'}
+            disabled={placing || (!retry && (!items.length || !addresses.selected || !addresses.ready || addresses.busy))} onPress={() => {
             Keyboard.dismiss();
-            dispatch({ type: 'place-order' });
+            void checkout(addresses.snapshotForOrder);
           }} /></View>
         </View>
       </View>
@@ -57,6 +68,8 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 120, height: 120, borderRadius: 60, backgroundColor: colors.primarySoft, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
   center: { textAlign: 'center' }, footer: { gap: 18 },
   checkout: { backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border },
+  checkoutFeedback: { width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 12, gap: 6 },
+  checkoutError: { color: colors.danger, fontSize: 14, lineHeight: 21 },
   checkoutInner: { width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', gap: 20, flexWrap: 'wrap' },
   total: { color: colors.ink, fontWeight: '700', fontSize: 24, marginTop: 2 }, checkoutButton: { flex: 1, minWidth: 140 },
 });

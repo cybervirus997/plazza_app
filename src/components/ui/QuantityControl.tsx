@@ -5,19 +5,20 @@ import { colors } from '../../theme/tokens';
 import { Button } from './Button';
 
 export function QuantityControl({ medicine, quantity }: { medicine: Medicine; quantity: number }) {
-  const { state, dispatch } = useShopping();
-  if (!quantity) return <Button label="+ Add" disabled={!state.hydrated} accessibilityLabel={`Add ${medicine.name} to cart`}
+  const { state, dispatch, checkoutLocked } = useShopping();
+  if (!quantity) return <Button label="+ Add" disabled={!state.hydrated || checkoutLocked} accessibilityLabel={`Add ${medicine.name} to cart`}
     variant="secondary" onPress={() => dispatch({ type: 'add', id: medicine.id })} />;
   const atMaximum = quantity >= medicine.maxQty;
   return <View>
     <View style={styles.control}>
       <Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${medicine.name} quantity`}
+        disabled={checkoutLocked} accessibilityState={{ disabled: checkoutLocked }}
         onPress={() => dispatch({ type: 'decrease', id: medicine.id })} style={styles.step}>
         <Text style={styles.symbol}>−</Text>
       </Pressable>
       <Text accessibilityLabel={`${medicine.name}, quantity ${quantity}`} style={styles.quantity}>{quantity}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel={`Increase ${medicine.name} quantity`}
-        accessibilityState={{ disabled: atMaximum }} disabled={atMaximum}
+        accessibilityState={{ disabled: atMaximum || checkoutLocked }} disabled={atMaximum || checkoutLocked}
         onPress={() => dispatch({ type: 'increase', id: medicine.id })} style={[styles.step, atMaximum && styles.disabled]}>
         <Text style={styles.symbol}>+</Text>
       </Pressable>

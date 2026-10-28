@@ -51,7 +51,7 @@ function invoke(node: TestInstance, property: 'onPress' | 'onChangeText', value?
 }
 
 test('coupon validation is visible at the form and a valid coupon updates the bill', async () => {
-  jest.mocked(AsyncStorage.getItem).mockResolvedValue(snapshot());
+  jest.mocked(AsyncStorage.getItem).mockImplementation(async (key) => key === 'plazza.shopping.v1' ? snapshot() : null);
   const root = createRoot();
   try {
     await act(async () => { root.render(<AddressBookProvider><AppStateProvider><CartScreen /></AppStateProvider></AddressBookProvider>); });
@@ -69,7 +69,7 @@ test('coupon validation is visible at the form and a valid coupon updates the bi
 });
 
 test('reducing an eligible cart displays auto-removal beside the coupon form and recalculates the bill', async () => {
-  jest.mocked(AsyncStorage.getItem).mockResolvedValue(snapshot('FLAT50'));
+  jest.mocked(AsyncStorage.getItem).mockImplementation(async (key) => key === 'plazza.shopping.v1' ? snapshot('FLAT50') : null);
   const root = createRoot();
   try {
     await act(async () => { root.render(<AddressBookProvider><AppStateProvider><CartScreen /></AppStateProvider></AddressBookProvider>); });
