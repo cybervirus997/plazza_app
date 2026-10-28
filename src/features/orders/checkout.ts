@@ -9,10 +9,11 @@ import { createSnapshotStore, isRecord, matchesCheckout, type StoragePort } from
 export const CHECKOUT_STORAGE_KEY = 'plazza.checkout.v1';
 export interface CheckoutIntent { readonly order: Order; readonly oneTimeCouponCode: string | null }
 export interface CheckoutResult { readonly snapshot: ShoppingState; readonly order: Order | null }
-interface Lifecycle {
+export interface CheckoutLifecycle {
   isCurrent?(): boolean;
   onFinalized?(snapshot: ShoppingState, order: Order): void;
 }
+type Lifecycle = CheckoutLifecycle;
 export class CheckoutCancelledError extends Error {
   constructor() { super('Checkout was interrupted. Its saved intent will be recovered.'); this.name = 'CheckoutCancelledError'; }
 }
@@ -70,6 +71,13 @@ export function createCheckoutCoordinator(storage: StoragePort, options: {
       && before.usedCouponCodes.includes(intent.oneTimeCouponCode)) throw new Error('The one-time coupon was already redeemed by a different checkout. Recovery needs review.');
     if (before.lastFinalizedCheckoutId === intent.order.checkoutId && intent.oneTimeCouponCode
       && !before.usedCouponCodes.includes(intent.oneTimeCouponCode)) throw new Error('The checkout checkpoint is missing its coupon redemption. Recovery needs review.');
+    if (before.lastFinalizedCheckoutId === intent.order.checkoutId) {
+      const receipt = await orders.getById(intent.order.id);
+      check(lifecycle);
+      if (!receipt || JSON.stringify(receipt) !== JSON.stringify(intent.order)) {
+        throw new Error('The checkout checkpoint has no matching receipt. Recovery needs review.');
+      }
+    }
     const saved = await orders.create(intent.order);
     check(lifecycle);
     const snapshot = await shopping.finalizeCheckout(saved.order, intent.oneTimeCouponCode);
@@ -122,6 +130,39 @@ export function createCheckoutCoordinator(storage: StoragePort, options: {
         if (retained) { const intent = retained; await saveIntent(intent); retained = null; check(lifecycle); return finish(intent, lifecycle); }
         return recoverClearedJournal(lifecycle);
       });
+    },
+    /** A confirmed payment supplies the already reviewed identity/prices/address. */
+    commit(input: Order, lifecycle: Lifecycle = {}): Promise<CheckoutResult> {
+      if (beginning) return Promise.reject(new Error('Checkout is already in progress.'));
+      const order = parseOrder(input);
+      beginning = true;
+      shopping.lockCheckout();
+      return serialize(storage, async () => {
+        shopping.lockCheckout();
+        check(lifecycle);
+        await shopping.flush();
+        const pending = await readIntent();
+        check(lifecycle);
+        if (!pending && cleanupReceipt) {
+          if (JSON.stringify(cleanupReceipt) !== JSON.stringify(order)) throw new Error('Checkout identity conflicts with the finalized receipt.');
+          return recoverClearedJournal(lifecycle);
+        }
+        const intent = pending ?? retained ?? Object.freeze({ order, oneTimeCouponCode: order.couponCode === 'FIRST100' ? 'FIRST100' : null });
+        if (JSON.stringify(intent.order) !== JSON.stringify(order)) throw new Error('The saved checkout conflicts with the confirmed payment.');
+        if (!pending) {
+          const source = await shopping.readForCheckout();
+          check(lifecycle);
+          if (source.lastFinalizedCheckoutId !== order.checkoutId && !matchesCheckout(source, order)) {
+            throw new Error('The saved cart differs from the reviewed checkout. No cart was cleared.');
+          }
+          retained = intent;
+          await saveIntent(intent);
+          check(lifecycle);
+        }
+        retained = null;
+        cleanupReceipt = null;
+        return finish(intent, lifecycle);
+      }).finally(() => { beginning = false; });
     },
     begin(input: { snapshot: ShoppingState; products: readonly Medicine[]; address(): Promise<DeliveryAddressSnapshot | null> }, lifecycle: Lifecycle = {}): Promise<CheckoutResult> {
       if (beginning) return Promise.reject(new Error('Checkout is already in progress.'));

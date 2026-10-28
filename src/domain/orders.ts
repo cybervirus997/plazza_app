@@ -11,6 +11,14 @@ export interface OrderItemSnapshot {
   readonly unitPrice: number;
   readonly rx: boolean;
 }
+export type DeliveryPreference = 'asap' | 'scheduled';
+export interface OrderPayment {
+  readonly version: 1;
+  readonly attemptId: string;
+  readonly method: 'upi' | 'cod';
+  readonly status: 'succeeded' | 'cod-confirmed';
+  readonly simulated: true;
+}
 export interface Order extends Bill {
   readonly version: 1;
   readonly id: string;
@@ -20,6 +28,8 @@ export interface Order extends Bill {
   readonly couponCode: string | null;
   readonly deliveryAddress: DeliveryAddressSnapshot;
   readonly status: 'placed';
+  readonly payment?: OrderPayment;
+  readonly deliveryPreference?: DeliveryPreference;
 }
 export interface OrderDraftInput {
   readonly id: string;
@@ -31,6 +41,7 @@ export interface OrderDraftInput {
   readonly couponCode: string | null;
   readonly usedCouponCodes: readonly string[];
   readonly deliveryAddress: DeliveryAddressSnapshot | null;
+  readonly deliveryPreference?: DeliveryPreference;
 }
 
 function invalid(): never { throw new Error('The order contains invalid receipt data.'); }
@@ -83,6 +94,14 @@ export function parseOrder(value: unknown): Order {
     || !Number.isFinite(Date.parse(value.placedAt)) || new Date(value.placedAt).toISOString() !== value.placedAt
     || !Array.isArray(value.items) || value.items.length === 0
     || (value.couponCode !== null && (!text(value.couponCode) || normalizeCouponCode(value.couponCode) !== value.couponCode))) return invalid();
+  let payment: OrderPayment | undefined;
+  if (value.payment !== undefined) {
+    const source = value.payment;
+    if (!isRecord(source) || source.version !== 1 || !text(source.attemptId) || source.simulated !== true
+      || !((source.method === 'upi' && source.status === 'succeeded') || (source.method === 'cod' && source.status === 'cod-confirmed'))) return invalid();
+    payment = Object.freeze({ version: 1, attemptId: source.attemptId, method: source.method, status: source.status, simulated: true });
+  }
+  if (value.deliveryPreference !== undefined && value.deliveryPreference !== 'asap' && value.deliveryPreference !== 'scheduled') return invalid();
   const productIds = new Set<string>();
   let itemTotal = 0;
   let itemCount = 0;
@@ -105,7 +124,8 @@ export function parseOrder(value: unknown): Order {
     || safeSum(itemTotal - discount, deliveryFee) !== grandTotal) return invalid();
   return Object.freeze({ version: 1, id: value.id, checkoutId: value.checkoutId, placedAt: value.placedAt,
     items: Object.freeze(items), couponCode: value.couponCode, itemTotal: itemTotal / 100, discount: discount / 100,
-    deliveryFee: deliveryFee / 100, grandTotal: grandTotal / 100, deliveryAddress: copyAddressSnapshot(value.deliveryAddress), status: 'placed' });
+    deliveryFee: deliveryFee / 100, grandTotal: grandTotal / 100, deliveryAddress: copyAddressSnapshot(value.deliveryAddress), status: 'placed',
+    ...(payment ? { payment } : {}), ...(value.deliveryPreference ? { deliveryPreference: value.deliveryPreference } : {}) });
 }
 
 /** Creates a receipt only; never mutates a cart or redeems a coupon. IDs/time belong to the caller. */
@@ -129,7 +149,8 @@ export function createOrderDraft(input: OrderDraftInput): Order {
   // Validate receipt arithmetic before passing bounded values into current pricing rules.
   const draft = parseOrder({ version: 1, id: input.id, checkoutId: input.checkoutId, placedAt: input.placedAt,
     items, itemTotal: input.bill.itemTotal, discount: input.bill.discount, deliveryFee: input.bill.deliveryFee,
-    grandTotal: input.bill.grandTotal, couponCode, deliveryAddress: input.deliveryAddress, status: 'placed' });
+    grandTotal: input.bill.grandTotal, couponCode, deliveryAddress: input.deliveryAddress, status: 'placed',
+    ...(input.deliveryPreference ? { deliveryPreference: input.deliveryPreference } : {}) });
   const itemCount = items.reduce((count, item) => safeSum(count, item.quantity), 0);
   if (couponCode && !evaluateCoupon(couponCode, { itemTotal: draft.itemTotal, itemCount, usedCouponCodes: input.usedCouponCodes }).valid) {
     throw new Error('The selected coupon is not valid for this checkout.');
