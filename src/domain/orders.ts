@@ -2,7 +2,7 @@ import { addressDraft, addressTextFields, deliveryOptions, gateOptions, validate
 import { calculateBill, type Bill } from './bill';
 import { evaluateCoupon, normalizeCouponCode } from './coupons';
 import type { Cart, Medicine } from './types';
-import { isRecord } from '../storage/persistence';
+import { isRecord } from './validation';
 
 export interface OrderItemSnapshot {
   readonly productId: string;

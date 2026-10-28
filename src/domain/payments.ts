@@ -1,6 +1,6 @@
 import { parseOrder, type Order } from './orders';
 import { allowsDemoCod } from './checkoutReview';
-import { isRecord } from '../storage/persistence';
+import { isRecord } from './validation';
 
 export type PaymentMethod = 'upi' | 'cod';
 export type PaymentStatus = 'initiated' | 'pending' | 'succeeded' | 'failed' | 'cancelled';

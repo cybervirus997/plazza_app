@@ -1,4 +1,4 @@
-import { isRecord } from '../storage/persistence';
+import { isRecord } from '../domain/validation';
 import type { Medicine } from '../domain/types';
 import { searchMedicines } from '../domain/search';
 import { catalogSource } from './catalog.generated';

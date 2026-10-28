@@ -1,12 +1,11 @@
+import { isRecord } from '../domain/validation';
 import { normalizeCouponCode } from '../domain/coupons';
 import { addRecentSearch } from '../domain/search';
 import { emptyShoppingState, type CartEntry, type Medicine, type ShoppingState } from '../domain/types';
 
-export const STORAGE_KEY = 'plazza.shopping.v1';
+export { isRecord } from '../domain/validation';
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
+export const STORAGE_KEY = 'plazza.shopping.v1';
 
 export function decodeSnapshot(raw: string | null, catalog: readonly Medicine[]): ShoppingState {
   if (!raw) return emptyShoppingState();

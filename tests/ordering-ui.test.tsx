@@ -20,6 +20,7 @@ import HomeScreen from '../src/features/home/HomeScreen';
 import AddressBookScreen from '../src/features/addresses/AddressBookScreen';
 import { paymentSetup } from './payment-fixtures';
 import { deferred, testOrder } from './order-fixtures';
+import * as orderPresentation from '../src/features/orders/orderPresentation';
 
 type Href = string | { pathname: string; params?: { id?: string } };
 let mockParams: { id?: string } = {};
@@ -404,5 +405,18 @@ test('Checkout choices expose selected state and stable accessible names', async
     await screen.tap('Scheduled · evening demo window');
     expect(labelled(screen.root, 'Scheduled · evening demo window').props.accessibilityState.selected).toBe(true);
     expect(labelled(screen.root, 'ASAP · demo preference').props.accessibilityState.selected).toBe(false);
+  } finally { await screen.unmount(); }
+});
+
+test('unchanged history cards avoid repeated formatting when unrelated shopping state changes', async () => {
+  const app = paymentSetup(); await app.service.orders.create(testOrder());
+  const formatting = jest.spyOn(orderPresentation, 'orderSummary');
+  const screen = await mount(app, '/orders');
+  try {
+    expect(formatting).toHaveBeenCalled();
+    formatting.mockClear();
+    await act(async () => { screen.read().shopping.dispatch({ type: 'search', query: 'care' }); });
+    expect(screen.text()).toContain('Test Relief · Test Care');
+    expect(formatting).not.toHaveBeenCalled();
   } finally { await screen.unmount(); }
 });

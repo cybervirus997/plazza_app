@@ -2,7 +2,7 @@ import { parseCatalog } from '../../data/catalog';
 import { categories, type CategoryId, type ProductImageKey } from '../../data/categories';
 import { searchMedicines } from '../../domain/search';
 import type { Medicine } from '../../domain/types';
-import { isRecord } from '../../storage/persistence';
+import { isRecord } from '../../domain/validation';
 
 export interface Product extends Medicine {
   readonly subtitle?: string;
