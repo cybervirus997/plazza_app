@@ -1,7 +1,6 @@
 import type { PermissionResponse } from 'expo';
 import * as Location from 'expo-location';
-import { AndroidImportance, IosAuthorizationStatus, getPermissionsAsync,
-  requestPermissionsAsync, setNotificationChannelAsync, type NotificationPermissionsStatus } from 'expo-notifications';
+import type { NotificationPermissionsStatus } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 export type PermissionStatus = 'undetermined' | 'granted' | 'denied' | 'blocked' | 'unavailable';
@@ -23,10 +22,8 @@ export function permissionStatus(response: Pick<PermissionResponse, 'status' | '
   return response.status === 'undetermined' ? 'undetermined' : 'denied';
 }
 
-function notificationStatus(response: NotificationPermissionsStatus): PermissionStatus {
-  if (response.ios && [IosAuthorizationStatus.AUTHORIZED,
-    IosAuthorizationStatus.PROVISIONAL,
-    IosAuthorizationStatus.EPHEMERAL].includes(response.ios.status)) return 'granted';
+function notificationStatus(response: NotificationPermissionsStatus, grantedIosStatuses: readonly number[]): PermissionStatus {
+  if (response.ios && grantedIosStatuses.includes(response.ios.status)) return 'granted';
   return permissionStatus(response);
 }
 
@@ -61,14 +58,18 @@ export async function readPermissions(mode: RequestMode): Promise<PermissionSnap
     location = permissionStatus(response);
   } catch { /* The unavailable status is visible in the permission panel. */ }
   try {
+    // Some Expo Go binaries lack SDK 58's notification topic module. A failed
+    // native module import must not prevent the shopping routes from loading.
+    const notificationsApi = await import('expo-notifications');
     if (Platform.OS === 'android') {
-      await setNotificationChannelAsync('orders', {
-        name: 'Order updates', importance: AndroidImportance.DEFAULT,
+      await notificationsApi.setNotificationChannelAsync('orders', {
+        name: 'Order updates', importance: notificationsApi.AndroidImportance.DEFAULT,
       });
     }
-    let response = await getPermissionsAsync();
-    if (shouldRequest(response, mode)) response = await requestPermissionsAsync();
-    notifications = notificationStatus(response);
+    let response = await notificationsApi.getPermissionsAsync();
+    if (shouldRequest(response, mode)) response = await notificationsApi.requestPermissionsAsync();
+    notifications = notificationStatus(response, [notificationsApi.IosAuthorizationStatus.AUTHORIZED,
+      notificationsApi.IosAuthorizationStatus.PROVISIONAL, notificationsApi.IosAuthorizationStatus.EPHEMERAL]);
   } catch { /* Shopping remains available without notification permission. */ }
 
   let coordinates: PermissionSnapshot['coordinates'] = null;

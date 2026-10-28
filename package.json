@@ -32,6 +32,7 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-dynamic-import": "^7.27.1",
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
     "eslint": "^9.39.5",
@@ -42,7 +43,6 @@
   },
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
@@ -59,13 +59,20 @@
     "pretypecheck": "npm run prepare:catalog",
     "pretest": "npm run prepare:catalog",
     "bundle:android": "npm run prepare:catalog && expo export --platform android",
-    "eas-build-post-install": "npm run prepare:catalog",
+    "eas-build-post-install": "npm run prepare:catalog -- --required",
     "postinstall": "npm run prepare:catalog"
   },
   "jest": {
     "preset": "jest-expo",
-    "testMatch": ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.test.tsx"],
-    "collectCoverageFrom": ["src/domain/**/*.ts", "src/state/appReducer.ts", "src/storage/persistence.ts"]
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.ts",
+      "<rootDir>/tests/**/*.test.tsx"
+    ],
+    "collectCoverageFrom": [
+      "src/domain/**/*.ts",
+      "src/state/appReducer.ts",
+      "src/storage/persistence.ts"
+    ]
   },
   "private": true
 }
