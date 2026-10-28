@@ -61,6 +61,7 @@ test('coupon validation is visible at the form and a valid coupon updates the bi
     expect(textContent(feedback)).toContain('That coupon code is not valid.');
     expect(feedback.queryAll((node) => node.props.accessibilityRole === 'alert')).not.toHaveLength(0);
 
+    await act(async () => { invoke(labelled(root, 'View available offers'), 'onPress'); });
     await act(async () => { invoke(labelled(root, 'Use coupon FLAT50'), 'onPress'); });
     expect(textContent(root.container)).toContain('✓ FLAT50 applied');
     expect(textContent(root.container)).toContain('Grand Total₹290');

@@ -9,10 +9,11 @@ import { fulfillmentStatuses, receiptPaymentLabel } from './statusPresentation';
 
 export function OrderIdentity({ order, reconciling = false }: { order: Order; reconciling?: boolean }) {
   const summary = orderSummary(order);
-  return <View style={ui.card}>
+  return <View style={styles.identity}>
     <StatusBadge {...fulfillmentStatuses[order.status]} />
-    <Text selectable style={ui.heading}>{order.id}</Text><Text style={ui.body}>{summary.date}</Text>
-    <Text style={ui.label}>SAVED ORDER TOTAL</Text><Text style={styles.total}>{summary.total}</Text>
+    <Text style={ui.heading}>{summary.reference}</Text>
+    <Text selectable accessibilityLabel={`Order identifier ${order.id}`} style={ui.small}>Full ID: {order.id}</Text><Text style={ui.body}>{summary.date}</Text>
+    <Text style={styles.total}>{summary.total}</Text>
     <Text style={ui.body}>{summary.productCount} products · {summary.quantity} items</Text>
     <Text style={ui.small}>{fulfillmentStatuses[order.status].explanation}</Text>
     {reconciling && <><StatusBadge label="Checkout reconciliation pending" tone="pending" icon="clock" />
@@ -34,4 +35,5 @@ export function OrderReceiptFooter({ order }: { order: Order }) {
     <Text style={ui.small}>This immutable receipt uses purchase-time prices and delivery details. It is a local demonstration, not a tax invoice or proof of payment.</Text>
   </>;
 }
-const styles = StyleSheet.create({ total: { color: colors.ink, fontSize: 30, lineHeight: 38, fontWeight: '700' } });
+const styles = StyleSheet.create({ identity: { gap: 8, borderBottomWidth: 1, borderColor: colors.border, paddingBottom: 16 },
+  total: { color: colors.ink, fontSize: 24, lineHeight: 32, fontWeight: '700' } });

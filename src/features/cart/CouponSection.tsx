@@ -7,6 +7,7 @@ import { colors, ui } from '../../theme/tokens';
 
 export function CouponSection() {
   const [input, setInput] = useState('');
+  const [showOffers, setShowOffers] = useState(false);
   const { state, dispatch, checkoutLocked } = useShopping();
   const feedback = state.notice?.kind === 'error' || state.notice?.kind === 'auto-removal'
     ? state.notice : null;
@@ -30,7 +31,8 @@ export function CouponSection() {
       <Text accessibilityRole={feedback.kind === 'error' ? 'alert' : undefined} accessibilityLiveRegion="polite"
         style={[ui.small, feedback.kind === 'error' && styles.errorText]}>{feedback.message}</Text>
     </View>}
-    {!state.activeCouponCode && <View style={styles.offers}>{couponRules.map((rule) => {
+    {!state.activeCouponCode && <Button label={showOffers ? 'Hide available offers' : 'View available offers'} variant="quiet" onPress={() => setShowOffers(!showOffers)} />}
+    {!state.activeCouponCode && showOffers && <View style={styles.offers}>{couponRules.map((rule) => {
       const used = !!rule.oneTime && state.usedCouponCodes.includes(rule.code);
       return <View key={rule.code} style={styles.offer}>
         <View style={ui.flex}><Text style={styles.code}>{rule.code}</Text><Text style={ui.small}>{rule.description}</Text></View>
