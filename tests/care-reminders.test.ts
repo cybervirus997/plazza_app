@@ -43,3 +43,10 @@ test('unsupported reminder ledgers are not overwritten or used to cancel native 
   await expect(createReminderCoordinator(native.port, storage.port).synchronize([], true, now)).rejects.toThrow();
   expect(storage.data.get(REMINDER_STORAGE_KEY)).toBe('{"version":99}'); expect(native.port.cancel).not.toHaveBeenCalled();
 });
+test('a reminder identifier cannot contradict its plan/revision metadata', async () => {
+  const storage = orderStorage(); const native = device();
+  const bytes = JSON.stringify({ version: 1, records: [{ id: 'plan-1', nativeId: 'plazza-care:other:1', revision: 1, at: '2027-01-31T03:30:00.000Z' }] });
+  storage.data.set(REMINDER_STORAGE_KEY, bytes);
+  await expect(createReminderCoordinator(native.port, storage.port).synchronize([], true, now)).rejects.toThrow();
+  expect(storage.data.get(REMINDER_STORAGE_KEY)).toBe(bytes); expect(native.port.cancel).not.toHaveBeenCalled();
+});

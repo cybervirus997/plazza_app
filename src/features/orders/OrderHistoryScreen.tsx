@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { useShopping } from '../../state/AppStateProvider';
-import { colors, ui } from '../../theme/tokens';
+import { colors, space, ui } from '../../theme/tokens';
 import { OrderHistoryCard } from './OrderHistoryCard';
 import { unresolvedPayment } from '../../domain/payments';
 import { useOrderHistory } from './useOrders';
@@ -16,7 +16,7 @@ export default function OrderHistoryScreen() {
   const history = useOrderHistory(orders);
   return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
     <Stack.Screen options={headerOptions('Your orders', 'Back from orders', () => backTo('/'))} />
-    <FlatList data={history.data?.orders ?? []} keyExtractor={(order) => order.id} contentContainerStyle={ui.content}
+    <FlatList data={history.data?.orders ?? []} keyExtractor={(order) => order.id} contentContainerStyle={[ui.content, { paddingHorizontal: space.lg }]}
       ListHeaderComponent={<View style={{ gap: 12 }}>
         <Text style={ui.label}>PLAZZA · SAVED ON THIS DEVICE</Text>
         <Text style={ui.body}>Local demo orders, newest first. Payment and fulfillment are separate; no real delivery occurs.</Text>

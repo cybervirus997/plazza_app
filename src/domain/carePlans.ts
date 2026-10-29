@@ -14,9 +14,9 @@ export function parseCareRecord(value: unknown): CareRecord {
   if (meta.updatedAt < meta.createdAt) throw new Error('Invalid care timestamps.');
   if (input.kind === 'recipient') return Object.freeze({ ...meta, kind: 'recipient', name: text(input.name), relationship: text(input.relationship), addressId: input.addressId === null ? null : text(input.addressId) });
   if (input.kind !== 'plan' || !Array.isArray(input.items) || !input.items.length || typeof input.reminders !== 'boolean'
-    || !['active', 'paused'].includes(String(input.status))) throw new Error('Invalid care plan.');
+    || typeof input.status !== 'string' || !['active', 'paused'].includes(input.status)) throw new Error('Invalid care plan.');
   const cadence = record(input.cadence);
-  if (!['day', 'week', 'month'].includes(String(cadence.unit))) throw new Error('Invalid recurrence.');
+  if (typeof cadence.unit !== 'string' || !['day', 'week', 'month'].includes(cadence.unit)) throw new Error('Invalid recurrence.');
   const items = input.items.map((raw) => { const item = record(raw); return Object.freeze({ medicineId: text(item.medicineId), quantity: integer(item.quantity, 1, 999) }); });
   if (new Set(items.map((item) => item.medicineId)).size !== items.length) throw new Error('Repeated proposed product.');
   return Object.freeze({ ...meta, kind: 'plan', recipientId: text(input.recipientId), items: Object.freeze(items),

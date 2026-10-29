@@ -9,7 +9,9 @@ export interface ScheduledCareReminder { readonly id: string; readonly nativeId:
 export interface ReminderPort { list(): Promise<readonly ScheduledCareReminder[]>; schedule(reminder: ScheduledCareReminder): Promise<void>; cancel(nativeId: string): Promise<void> }
 export const REMINDER_STORAGE_KEY = 'plazza.reminders.v1';
 function parseReminder(value: unknown): ScheduledCareReminder {
-  const input = record(value); return { id: text(input.id), nativeId: text(input.nativeId), at: timestamp(input.at), revision: integer(input.revision) };
+  const input = record(value); const result = { id: text(input.id), nativeId: text(input.nativeId), at: timestamp(input.at), revision: integer(input.revision) };
+  if (result.nativeId !== `plazza-care:${result.id}:${result.revision}`) throw new Error('Conflicting reminder identity.');
+  return result;
 }
 let handlerReady = false;
 async function nativeAPI() {

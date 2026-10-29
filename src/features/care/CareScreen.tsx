@@ -22,6 +22,7 @@ export default function CareScreen() {
     {care.reminderError && <Text accessibilityRole="alert">{care.reminderError}</Text>}
     <Button label="Refresh due dates & device reminders" variant="secondary" disabled={care.busy} onPress={care.refresh} />
     <Button label="App permissions" variant="quiet" onPress={() => router.navigate('/app-permissions')} />
+    <Button label="Manage Mock AutoPay previews" variant="quiet" onPress={() => router.navigate('/care/autopay')} />
     {!care.ready ? <Text>Care data is loading or needs retry. Saved data has not been reset.</Text> : <>
       <Text style={ui.heading}>Care recipients</Text>
       <Button label="Add care recipient" disabled={care.busy} onPress={() => router.navigate('/care/recipient')} />
@@ -41,6 +42,7 @@ export default function CareScreen() {
         <Text style={ui.body}>{new Date(plan.nextReviewAt).toLocaleString('en-IN', { timeZone: plan.timeZone })} · {plan.timeZone}</Text>
         <Text style={ui.small}>{plan.reminders ? 'Device reminders requested where supported. In-app due dates always work.' : 'In-app reminder only.'} Device delivery time is not guaranteed.</Text>
         <Button label="Review Medicines" accessibilityLabel={`Review care plan ${plan.id}`} disabled={care.busy} onPress={() => router.navigate({ pathname: '/care/review', params: { id: plan.id } })} />
+        <Button label="Explore Mock AutoPay" variant="secondary" disabled={care.busy} onPress={() => router.navigate({ pathname: '/care/autopay', params: { id: plan.id } })} />
         <Button label="Edit plan" variant="secondary" disabled={care.busy} onPress={() => router.navigate({ pathname: '/care/plan', params: { id: plan.id } })} />
         <Button label={plan.status === 'active' ? 'Pause reminders' : 'Resume reminders'} variant="secondary" disabled={care.busy} onPress={() => { void care.action(plan, plan.status === 'active' ? 'pause' : 'resume'); }} />
         <Button label="Skip next reminder" variant="quiet" disabled={care.busy} onPress={() => { void care.action(plan, 'skip'); }} />

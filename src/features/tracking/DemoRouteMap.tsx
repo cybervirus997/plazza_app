@@ -6,7 +6,7 @@ export function DemoRouteMap() {
       {[20, 45, 75].map((position) => <View key={`h${position}`} style={[styles.street, { top: `${position}%`, left: 0, right: 0, height: 12 }]} />)}
       {[18, 50, 82].map((position) => <View key={`v${position}`} style={[styles.street, { left: `${position}%`, top: 0, bottom: 0, width: 12 }]} />)}
       <View style={styles.routeH} /><View style={styles.routeV} />
-      <Text style={styles.store}>+ Demo pharmacy</Text><Text style={styles.destination}>⌂ Destination</Text>
+      <Text allowFontScaling={false} style={styles.store}>+ Demo pharmacy</Text><Text allowFontScaling={false} style={styles.destination}>⌂ Destination</Text>
     </View>
     <Text style={[ui.label, styles.watermark]}>ILLUSTRATIVE DEMO · NO LIVE GPS</Text>
   </View>;

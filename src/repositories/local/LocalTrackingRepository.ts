@@ -10,8 +10,12 @@ export function createLocalTrackingRepository(port: StoragePort = AsyncStorage, 
     async get(id) { return (await store.load()).find((item) => item.id === id) ?? null; },
     async ensure(order, finalized) {
       if (!finalized) throw new Error('Finish checkout reconciliation before tracking.');
-      const records = await store.change((items) => items.some((item) => item.id === order.id) ? items : [...items,
-        { id: order.id, version: 1, requiresRx: order.items.some((item) => item.rx), events: [{ id: `${order.id}:placed`, stage: 'placed', at: order.placedAt, etaMinutes: null }] }]);
+      const records = await store.change((items) => {
+        const existing = items.find((item) => item.id === order.id); const requiresRx = order.items.some((item) => item.rx);
+        if (existing && (existing.requiresRx !== requiresRx || existing.events[0].at !== order.placedAt)) throw new Error('Tracking conflicts with its immutable receipt. Saved data has not been changed.');
+        return existing ? items : [...items,
+          { id: order.id, version: 1, requiresRx, events: [{ id: `${order.id}:placed`, stage: 'placed', at: order.placedAt, etaMinutes: null }] }];
+      });
       return records.find((item) => item.id === order.id)!;
     },
     async advance(id, stage, eventId) {

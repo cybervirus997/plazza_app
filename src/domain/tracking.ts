@@ -27,6 +27,7 @@ export function parseTracking(value: unknown): OrderTracking {
   const events = input.events.map((raw): TrackingEvent => {
     const event = record(raw); const stage = text(event.stage) as TrackingStage;
     if (!trackingStages.includes(stage)) throw new Error('Unknown tracking stage.');
+    if ((stage === 'delayed' && event.etaMinutes === null) || (stage !== 'delayed' && event.etaMinutes !== null)) throw new Error('Invalid stage estimate metadata.');
     return { id: text(event.id), at: timestamp(event.at), stage, etaMinutes: event.etaMinutes === null ? null : integer(event.etaMinutes, 1, 1440) };
   });
   if (events[0].stage !== 'placed' || new Set(events.map((event) => event.id)).size !== events.length) throw new Error('Invalid tracking origin/identity.');

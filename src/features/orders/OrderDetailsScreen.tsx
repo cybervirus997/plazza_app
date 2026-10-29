@@ -3,7 +3,7 @@ import { ActivityIndicator, FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { useShopping } from '../../state/AppStateProvider';
-import { colors, ui } from '../../theme/tokens';
+import { colors, space, ui } from '../../theme/tokens';
 import { OrderItem } from './OrderItems';
 import { OrderIdentity, OrderReceiptFooter } from './OrderReceipt';
 import { useOrderById } from './useOrders';
@@ -19,7 +19,7 @@ export default function OrderDetailsScreen() {
   const order = resource.data;
   return <SafeAreaView edges={headerContentEdges} style={ui.screen}>
     <Stack.Screen options={headerOptions('Order receipt', 'Back from receipt', () => backTo('/orders'))} />
-    <FlatList data={order?.items ?? []} keyExtractor={(item) => item.productId} contentContainerStyle={ui.content}
+    <FlatList data={order?.items ?? []} keyExtractor={(item) => item.productId} contentContainerStyle={[ui.content, { paddingHorizontal: space.lg }]}
       ListHeaderComponent={<View style={{ gap: 14 }}>
         <Text style={ui.label}>PURCHASE-TIME SNAPSHOT</Text>
         {order && <OrderIdentity order={order} reconciling={payment.attempt?.order.id === order.id && !payment.attempt.finalized} />}

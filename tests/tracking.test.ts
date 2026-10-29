@@ -63,3 +63,9 @@ test('delay/Rx/failure suppress misleading ETAs and event timestamps remain orde
   expect(() => advanceTracking(delayed, { id: 'old', stage: 'cancelled', at: '2020-01-01T00:00:00.000Z', etaMinutes: null })).toThrow();
   expect(() => parseTracking({ ...failed, events: [...failed.events].reverse() })).toThrow();
 });
+test('a restored tracking record cannot contradict its receipt Rx/origin evidence', async () => {
+  const { port, data } = orderStorage(); const order = testOrder(); const repo = createLocalTrackingRepository(port);
+  const tracking = await repo.ensure(order, true);
+  const bytes = JSON.stringify({ version: 1, records: [{ ...tracking, requiresRx: !tracking.requiresRx }] }); data.set(TRACKING_STORAGE_KEY, bytes);
+  await expect(repo.ensure(order, true)).rejects.toThrow('conflicts'); expect(data.get(TRACKING_STORAGE_KEY)).toBe(bytes);
+});

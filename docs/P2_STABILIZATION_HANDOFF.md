@@ -9,7 +9,7 @@ Saved on 29 October 2026 at the user's request to continue in a fresh chat. Star
 - The user's pre-existing **uncommitted `app.json` edit must remain untouched and excluded from commits**. Its SHA-256 is `3d0fd8c17ed6e4872c891bf90a3489e8a846a05b10a984aadfaeb7f9d307eef6`. It contains the user's EAS owner/project linking and formatting changes. It is expected to be the only dirty file after the handoff commit.
 - Expo `~58.0.20`, React Native `0.88.0`, strict TypeScript, Expo Router, Context/useReducer, versioned AsyncStorage. No SDK/dependency upgrades, new state library, native config changes or AGENTS.md changes were made.
 - No push or APK/EAS build is authorized automatically. There was no physical-device verification at the original handoff; see continuation evidence below.
-- Do not implement P3 tracking, Plus, experiments, analytics, Profile, Share, backend, real payments or fulfillment without a new explicit request.
+- The later MASTER request authorized simulated tracking, Family Care and Mock AutoPay, implemented below. Further scope (Plus, experiments, analytics, Profile, Share, backend, real payments/fulfillment) still requires a new request.
 - Read [AGENTS.md](../AGENTS.md) before code. Fetch installed-version Expo docs before native/Router changes. SDK 58 uses layout `anchor`; `initialRouteName` layout settings are deprecated.
 
 ### Continuation on 29 October 2026
@@ -28,6 +28,14 @@ The user subsequently requested execution and local commits for P2.5 **Part 1 on
 ### Latest continuation — P2.5 Part 2 completed
 
 The user explicitly authorized Part 2 and local commits. Source: **`2a29d62`**; documentation follows separately. See [P2_5_PART2.md](P2_5_PART2.md) for Home/search hierarchy, selected saved address versus optional GPS, App Permissions diagnostics, isolated synthetic scan modal, evidence and the concise phone checklist. Latest checks: clean typecheck/lint, **491 tests / 37 suites**, static preflight and **3.4 MB / 1,492-module / 32-asset** Android Hermes export. All 478 prior cases remain plus 13; lifecycle fixtures now explicitly acquire a fix instead of assuming GPS/prompting at startup. No new physical UX sign-off. Only the protected `app.json` edit should remain dirty after the documentation commit. No push/build, commerce/recovery/schema changes, Orders/Payment redesign, snackbar, floating cart, Profile or Share. **Stop here: Parts 3–4 and P3 require another explicit request.**
+
+### Latest continuation — MASTER A–D completed
+
+The user's later MASTER attachment explicitly authorized A → B → C → D with focused local commits. This supersedes the earlier Part 2 stop instruction for these four milestones. See [MASTER_IMPLEMENTATION.md](MASTER_IMPLEMENTATION.md) for behavior, ownership, schema compatibility, verification and limitations. Source commits: A **`99501a5`**, B **`7d5691f`**, C **`1201a16`**; D is the local commit titled `feat(care): add explicit Mock AutoPay preview and final audit (milestone D)`.
+
+Final automated gate: **547 tests / 47 suites**, clean typecheck/lint/diff, static preflight pass (sandbox ADB warning), Android Hermes export **3.5 MB / 1,525 modules / 32 assets**. All 491 baseline cases and checkout crash-injection coverage remain. Tracking/care/reminder/mock data have four separate version-1 keys; original shopping/address/checkout/payment/receipt schemas are unchanged. Existing checkout coordinator and frozen receipt ownership are preserved. No push, native build, dependency upgrade or app.json change.
+
+Use [CODEBASE_MAP.md](CODEBASE_MAP.md) and [NEXT_SLICE.md](NEXT_SLICE.md) as the next-session entry points. Only device QA remains for this scope: the [16-step MASTER checklist](ORDERS_ANDROID_CHECKLIST.md#master-ad--final-phone-pass) is pending. The previous Expo Go Home report does not verify the new flows. Android native reminders are skipped in Expo Go and need an existing compatible development build; no build starts automatically. Local unencrypted storage, best-effort reminders and all financial/fulfillment simulation limits are documented in the MASTER report.
 
 ## Completed product foundation
 
@@ -114,7 +122,7 @@ Presentation owners: `components/ui/StatusPanel.tsx`, `features/orders/statusPre
 
 ## Remaining work and future plan
 
-### Immediate continuation — P2 verification, not another feature phase
+### Historical P2 verification plan — use NEXT_SLICE.md for current work
 
 1. Inspect branch/status/log and verify the protected `app.json` bytes. Read [ENGINEERING_STANDARDS.md](ENGINEERING_STANDARDS.md) and [P2_STABILIZATION.md](P2_STABILIZATION.md). Do not reread the entire conversation or rewrite completed work.
 2. Review the focused source diff from `eefd7d7`. Re-run checks only when new edits/failures or a verification need justify it; do not repeatedly run the same full suite without a reason.
@@ -128,8 +136,8 @@ Presentation owners: `components/ui/StatusPanel.tsx`, `features/orders/statusPre
 - Resolve any device-specific transition/keyboard/accessibility defects before adding product scope.
 - Consider explicit safe reconciliation UX for irreparable/conflicting local data if requested; do not implement a silent reset.
 - Profile larger order histories before broader context/caching/virtualization changes.
-- Choose the next roadmap slice with the user. Simulated tracking/status progression is a possible future P3, but it is **not authorized by the stabilization task**. Plus, offers/experiments, analytics, Profile/Share and real backend/payments remain future work.
+- The later MASTER request authorized and completed simulated tracking/status progression, Family Care and Mock AutoPay. Plus, offers/experiments, analytics, Profile/Share and real backend/payments remain future work.
 
 ## Suggested first message in the new chat
 
-“Continue Plazza on `feat/plazza-commerce-mvp`. Read `docs/P2_STABILIZATION_HANDOFF.md` and `AGENTS.md` first. Preserve the uncommitted `app.json` edit and `master`. Review the remaining P2 verification items and propose the next focused step; do not start P3, push or build an APK automatically.”
+“Continue Plazza on `feat/plazza-commerce-mvp`. Read AGENTS.md, docs/CODEBASE_MAP.md, docs/NEXT_SLICE.md and the latest MASTER section of docs/P2_STABILIZATION_HANDOFF.md. Preserve the uncommitted app.json edit and master. A–D implementation is complete; continue remaining device verification and fix only reproduced defects. Do not add features, push or build an APK automatically.”

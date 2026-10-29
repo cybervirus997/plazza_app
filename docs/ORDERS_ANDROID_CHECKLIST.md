@@ -1,5 +1,26 @@
 # Complete P2 — physical Android checklist
 
+## MASTER A–D — final phone pass
+
+All 16 scenarios below remain **pending**. Record device/OS, Expo Go versus development build, commit and pass/fail evidence. Previous Home smoke on Samsung S20 FE / Android 13 predates MASTER. Use synthetic test data and preserve existing receipts/FIRST100. Android Expo Go can exercise UI but skips native reminders; use an existing SDK-compatible development build for notification checks. No build is automatically authorized.
+
+1. **Cart:** add/remove medicines, stepper/max feedback, open offers/apply/remove/invalidate coupons; verify the existing totals, compact empty Browse action and sticky CTA.
+2. **Checkout/address:** change selected address and confirm Cart/Checkout agree; default/GPS must remain separate. Edit Cart repeatedly without duplicate tabs or lost preferences.
+3. **Payment:** deliberate success, pending/check-status, failure and cancel; restart pending and reconcile one identity/order, preserving cart/FIRST100 on unsuccessful outcomes. Keep the detailed crash harness below for controlled failure injection.
+4. **History/receipt:** newest-first, short reference plus selectable full ID, frozen products/prices/totals/address after current data changes; payment versus fulfillment status and reconciliation remain distinct.
+5. **Tracking:** eligible finalized receipt only; explicitly progress through placed/confirmed/packing/out-for-delivery/delivered, restart midway, and test delay/cancel/unable/Rx branches. No receipt changes or terminal reversal.
+6. **Map/ETA:** responsive illustrative streets/path/markers and accessible demo label; 10-minute estimate is a simulation disclaimer, with no unconditional ETA for Rx review or failures.
+7. **Recipients:** create/edit/remove, optional saved-address link, deleted-address warning and explicit alternate confirmation. No Contacts prompt or authenticated-family claim.
+8. **Plans:** create weekly/monthly/custom-day plans with local review time/timezone; verify month-end behavior, saved items/quantities, due/upcoming labels and restart.
+9. **Plan actions:** pause/resume/skip/edit/delete, including dirty-form Back and save-in-flight guards. Reminders never order medicines.
+10. **Notifications:** denied permissions still allow care; explicit enable in Permissions on a compatible build, schedule a future review, edit/pause/delete and foreground/restart reconciliation. Generic lock-screen text only; best-effort timing, no repeated prompt/exact-alarm request. Expo Go skip is expected.
+11. **Mock AutoPay:** inactive save, explicit consent and activation confirmation, cap/schedule update, pause/resume/cancel, preview current prices/Rx/unavailability/cap. Cancel an orphan preview; verify reminder pause is independent. No bank/UPI fields or real mandate/charge claims.
+12. **No unintended orders:** compare History/cart before and after reminders/mock actions. Care review must require address plus merge/replace when Cart is nonempty; proposal edits use current catalog, and only explicit Cart/Checkout can place a demo order.
+13. **Keyboard/Back:** coupon, recipient, plan and cap inputs; scroll last fields/actions above keyboard, close once, test toolbar/system Back, dirty discard and backgrounded async callbacks.
+14. **Small screen/large fonts:** inspect Cart sticky summary, IDs/status/receipt, tracking controls, care forms and mock controls for clipping/overlap, usable 48dp targets and safe areas.
+15. **TalkBack/reduced motion:** clear labels/selected/disabled states, status announced without color dependence, map summary understandable, transitions disabled with reduced motion, no focus traps.
+16. **Force-stop/restart:** preserve cart/coupon/address/payment/receipts/tracking/care/mock statuses. Reconcile native IDs without duplicate reminders; failed scheduling stays nonfatal and no automatic checkout occurs.
+
 Not performed by automated tests or Hermes export. Use an existing SDK-compatible development/standalone build and record device, Android version and build/commit. No EAS build is started by this implementation.
 
 ## P2.5 Part 1 — quick navigation/header pass

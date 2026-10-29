@@ -36,6 +36,16 @@ Pure object validation lives in `domain/validation.ts`. The storage compatibilit
 - Treat rejected storage acknowledgements as uncertain commit outcomes. Retry the same identity; do not compensate by deleting receipts or silently discarding journals.
 - Do not refactor the crash-recovery protocol for cosmetic cleanup. Require a demonstrated correctness need and preserve all failure-injection coverage.
 
+## Independent tracking, care and mock previews
+
+Tracking events belong to `TrackingRepository`, never receipt updates. Only durable finalized orders with reconciliation evidence are eligible. Transitions are explicit and deterministic; Rx review is not pharmacy approval and the map/ETA never claims live fulfillment.
+
+`CarePlanRepository` owns recipients/plans; recurrence is pure timezone-aware domain logic. Reminder reconciliation owns only its native-ID ledger and OS schedules. Persist plan changes before reconciling, fail nonfatally on native errors, never prompt implicitly, never request exact alarms, and keep lock-screen content generic. The Android Expo Go guard must run before importing notifications. Keep native scheduling injectable and reconcile on startup/foreground/edits.
+
+Care review resolves current catalog/quantity/Rx, requires explicit valid address confirmation and explicit merge/replace choice. Import through `review-care-cart` with the expected cart; the existing reducer/writer alone applies coupon validation and persists shopping. Never create a payment/order from a reminder.
+
+Mock mandates are separate simulation-only records. Require explicit opt-in and confirmation, revision guards and current-catalog read-only previews. No credentials, authorization, charge/revenue/order writes or coupling to reminder pause. Cancelled/orphan previews must remain manageable. New independent keys use `storage/versionedRecords`; this helper must never replace existing checkout/shopping protocols. Single-key serialization does not imply a transaction across feature keys or OS schedules.
+
 ## Hooks and lifecycle
 
 Use hooks for coherent state/effect ownership, not to hide unrelated operations. Keep pure transforms outside hooks. Scope async work to the provider lifetime/recovery generation; check again between persistence phases and before publishing results. Native promises already in flight may finish after unmount, so recovery must reconcile their durable bytes.
